@@ -5,8 +5,11 @@ const getActiveExercise = () => {
   // reset
   // setActiveExercise();
   const storageItem = JSON.parse(sessionStorage.getItem("activeExercise"))
-  console.log(storageItem)
-  return storageItem.active
+
+  if (storageItem) {
+    return storageItem.active
+  };
+  return null
 }
 
 // set to local storage, no exercise = reset
@@ -26,6 +29,7 @@ const setActiveExercise = (exercise = null) => {
 const exerciseInitialState = {
   list: [
     "Random Quote Machine",
+    "Markdown Previewer"
   ],
   // check localstorage if there is an active exercise
   active: getActiveExercise(),
@@ -61,6 +65,6 @@ const rootReducer = combineReducers({
   exercises: exerciseReducer,
 });
 
-const store = createStore(rootReducer);
+const exerciseStore = createStore(rootReducer);
 
-export default store
+export default exerciseStore
