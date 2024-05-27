@@ -9,8 +9,6 @@ import { createStore } from "redux";
 // for hot loading css
 import "../../Public/Random Quote Machine/Random Quote Machine.css"
 
-// TODO: create store for quotes
-
 // initial store state
 // TODO: maybe get them from somewhere?
 const storeInitial = {
@@ -47,6 +45,55 @@ const quoteReducer = (state = storeInitial, action) => {
 
 const store = createStore(quoteReducer);
 
+// tweet button element
+class TweetButton extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = store.getState();
+
+    this.tweetQuoteHTML = this.tweetQuoteHTML.bind(this);
+    this.updateState = this.updateState.bind(this);
+    this.linkHref = this.linkHref.bind(this);
+  }
+
+  // get a html link with correct quote
+  tweetQuoteHTML() {
+    return `https://twitter.com/intent/tweet?text=${this.state.currentQuote[1]}`
+  }
+
+  updateState() {
+    console.log("hi")
+    this.setState(() => {
+      return {
+        ...store.getState()
+      };
+    });
+  }
+
+  linkHref() {
+    this.updateState();
+    console.log("hi")
+    $("#tweet-quote").attr("href", this.tweetQuoteHTML());
+  }
+
+  render() {
+    return (
+      <div id="tweet_wrap">
+        <a
+          // whenever you middle click:
+          onAuxClick={this.linkHref}
+          // whenever you click
+          onClick={this.linkHref}
+          href={this.tweetQuoteHTML()}
+          id="tweet-quote">
+          Tweet Quote
+        </a>
+      </div>
+    )
+  }
+};
+
 // box element
 class QuoteBox extends React.Component {
   constructor(props) {
@@ -57,9 +104,10 @@ class QuoteBox extends React.Component {
     this.state = store.getState();
 
     //remember to bind this if you make any methods inside object
-    this.updateQuote = this.updateQuote.bind(this)
+    this.updateQuote = this.updateQuote.bind(this);
   }
 
+  // new-quote button logic
   updateQuote() {
     store.dispatch({ type: "quote/get" });
     this.setState({
@@ -78,9 +126,9 @@ class QuoteBox extends React.Component {
           type="button"
           id="new-quote"
           onClick={this.updateQuote}>
-          Hello
+          New Quote
         </button>
-        <div id="tweet_wrap"><a href="" id="tweet-quote"></a></div>
+        <TweetButton></TweetButton>
       </div>
     )
   };
