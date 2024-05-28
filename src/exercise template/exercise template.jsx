@@ -1,13 +1,17 @@
-import reactDom from "react-dom";
+import ReactDOM from "react-dom";
 import React from "react";
 import { Provider } from "react-redux";
-import exerciseStore from "../exerciseStore";
-import Reset from "../Reset";
+
 import $ from "jquery";
 
-reactDom.render(
-  <Provider store={exerciseStore}>
-    <h1>template</h1>
+// for hot loading css
+import "../../Public/Random Quote Machine/Random Quote Machine.css"
+// for resetting to the exercise menu
+import Reset from "../Reset";
+
+ReactDOM.render(
+  <Provider store={""}>
     <Reset></Reset>
+    template
   </Provider>,
-  document.getElementById("root"));
+  $("root")[0]);
