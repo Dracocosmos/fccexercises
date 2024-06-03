@@ -1,0 +1,7 @@
+/* can't use * as selector on codepen */
+
+:root {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
