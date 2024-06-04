@@ -30,6 +30,6 @@ const store = createStore(exampleReducer);
 ReactDOM.render(
   <Provider store={store}>
     <Reset></Reset>
-    template
+    exercise template
   </Provider>,
   $("root")[0]);
