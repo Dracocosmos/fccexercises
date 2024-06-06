@@ -80,15 +80,19 @@ if paths_found:
         # make a new json file
         with open("./src/exercises_list.json", "r") as file:
             # parse json
-            file_json = json.load(file)
+            parsed_json = json.load(file)
+            json_list = parsed_json["list"]
 
-            # add new file to list
-            file_json["list"].append(filename)
-            new_list = list(set(file_json["list"]))
-            file_json["list"] = new_list
+            # use folders in src as an exercise list
+            folder_list = [entry.name for entry in os.scandir("./src/") if entry.is_dir()]
+            try:
+                folder_list.remove(template_string)
+            except:
+                pass
+            parsed_json["list"] = folder_list
 
             # write new json file
-            open("./src/exercises_list.json", "w").write(json.dumps(file_json))
+            open("./src/exercises_list.json", "w").write(json.dumps(parsed_json))
     except Exception as e:
         print("error with .json file ", e)
         sys.exit(5)

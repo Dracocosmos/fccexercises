@@ -32,4 +32,5 @@ ReactDOM.render(
     <Reset></Reset>
     exercise template
   </Provider>,
-  $("root")[0]);
+  $("#root")[0]
+);
