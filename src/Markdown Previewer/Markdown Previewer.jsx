@@ -70,10 +70,14 @@ And here. | Okay. | I think we get it.
 // payload example
 const updateText = { type: 'editorText/edit', payload: null }
 
+marked.use({
+  breaks: true
+});
+
 const editorReducer = (state = storeInitial, action) => {
   switch (action.type) {
     case 'editorText/edit':
-      const html = DOMPurify.sanitize(marked.parse(action.payload));
+      const html = DOMPurify.sanitize(marked.parse(action.payload, { breaks: true }));
       const purifiedText = DOMPurify.sanitize(action.payload);
       // const markdown = marked.parse(action.payload);
       return {
@@ -171,7 +175,7 @@ class ModeSwitchButton extends React.Component {
     this.state = {
       ...store.getState(),
       // get initial button text
-      buttonText: "Switch to Markup"
+      buttonText: "Switch to HTML"
     }
 
     this.buttonClick = this.buttonClick.bind(this);
@@ -193,10 +197,10 @@ class ModeSwitchButton extends React.Component {
 
     switch (this.state.editorMode) {
       case 0:
-        switchMode("Switch to interpreted text")
+        switchMode("Switch to interpretation")
         return;
       case 1:
-        switchMode("Switch to Markup")
+        switchMode("Switch to HTML")
         return;
       default:
         break;
@@ -233,36 +237,44 @@ class PreviewTextArea extends React.Component {
   constructor(props) {
     super(props);
 
-    // this makes it so that initial text is ran through the markdown intrepreter
+    // this makes it so that initial text is ran through the markdown interpreter
     store.dispatch({ type: "editorText/edit", payload: this.props.editorText })
-
-    this.chooseText = this.chooseText.bind(this)
-  }
-
-  chooseText(_text) {
-    switch (this.props.editorMode) {
-      case 0:
-        return this.props.editorHtml
-      case 1:
-        return this.props.editorHtml
-      default:
-        return "error"
-    }
   }
 
   render() {
-    // this uses the editor text prop so it keeps calling the method
-    const divText = this.chooseText(this.props.editorText)
-    console.log($.parseHTML(divText))
-    console.log($.parseHTML(divText).map((element, _id) => element))
-    return (
-      <div
-        name="preview-textarea"
-        id="preview"
-      >
-        {$.parseHTML(divText).map((element, _id) => element)}
-      </div>
-    )
+
+    // common attributes for divs
+    let divAttributes = {
+      name: "preview-textarea",
+      id: 'preview'
+    }
+
+    switch (this.props.editorMode) {
+      case 0:
+        return (
+          <div
+            {...divAttributes}
+            dangerouslySetInnerHTML={{ __html: this.props.editorHtml }}
+          >
+          </div>
+        )
+      case 1:
+        return (
+          <div
+            {...divAttributes}
+          >
+            {this.props.editorHtml}
+          </div>
+        )
+      default:
+        console.log("error choosing editor mode")
+        return (
+          <div
+            {...divAttributes}
+          >
+          </div>
+        )
+    }
   }
 };
 
