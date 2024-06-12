@@ -115,7 +115,9 @@ class EditorHeader extends React.Component {
 
   render() {
     return (
-      <div id="editor-header" className="header"></div>
+      <div id="editor-header" className="header">
+        <h2 className="header-text">Editor</h2>
+      </div>
     )
   }
 };
@@ -138,12 +140,16 @@ class EditorTextArea extends React.Component {
 
   render() {
     return (
-      <form action="#" >
+      <form action="#"
+        id="editor-form"
+        className="text-box"
+      >
         <textarea
           name="editor-textarea"
           id="editor"
           onKeyUp={this.userInput}
-          defaultValue={this.state.editorText}>
+          defaultValue={this.state.editorText}
+        >
         </textarea>
       </form>
     )
@@ -210,7 +216,8 @@ class ModeSwitchButton extends React.Component {
   render() {
     console.log()
     return (
-      <button onClick={this.buttonClick}>
+      <button onClick={this.buttonClick}
+        className="header-button">
         {this.state.buttonText}
       </button>
     )
@@ -227,6 +234,7 @@ class PreviewHeader extends React.Component {
   render() {
     return (
       <div id="preview-header" className="header">
+        <h2 className="header-text">Preview</h2>
         <ModeSwitchButton></ModeSwitchButton>
       </div>
     )
@@ -244,9 +252,10 @@ class PreviewTextArea extends React.Component {
   render() {
 
     // common attributes for divs
-    let divAttributes = {
+    const divAttributes = {
       name: "preview-textarea",
-      id: 'preview'
+      id: 'preview',
+      className: 'text-box'
     }
 
     switch (this.props.editorMode) {
@@ -307,8 +316,10 @@ class Preview extends React.Component {
 ReactDOM.render(
   <Provider store={store}>
     <Reset></Reset>
-    <Editor></Editor>
-    <Preview></Preview>
+    <div id="page-wrap">
+      <Editor></Editor>
+      <Preview></Preview>
+    </div>
   </Provider>,
   $("#root")[0]
 );
