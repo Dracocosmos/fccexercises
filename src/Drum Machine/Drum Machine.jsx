@@ -53,115 +53,54 @@ const sampleSources = [
 const storeInitial = {
   samples: [
     {
-      key: 'Q', name: '', reactKey: 1,
+      key: 'Q', name: '',
       url: ''
     },
     {
-      key: 'W', name: '', reactKey: 2,
+      key: 'W', name: '',
       url: ''
     },
     {
-      key: 'E', name: '', reactKey: 3,
+      key: 'E', name: '',
       url: ''
     },
     {
-      key: 'A', name: '', reactKey: 4,
+      key: 'A', name: '',
       url: ''
     },
     {
-      key: 'S', name: '', reactKey: 5,
+      key: 'S', name: '',
       url: ''
     },
     {
-      key: 'D', name: '', reactKey: 6,
+      key: 'D', name: '',
       url: ''
     },
     {
-      key: 'Z', name: '', reactKey: 7,
+      key: 'Z', name: '',
       url: ''
     },
     {
-      key: 'X', name: '', reactKey: 8,
+      key: 'X', name: '',
       url: ''
     },
     {
-      key: 'C', name: '', reactKey: 9,
+      key: 'C', name: '',
       url: ''
     }
   ],
   lastPlayed: null,
 };
+// individual keys for react
+storeInitial.samples.forEach((sample, index) => sample.reactKey = index)
 
-// delete old database
-try {
-  indexedDB.deleteDatabase('SampleDatabase')
-} catch (error) {
-  console.log("old database not found, no action needed");
-}
-
-// needs to be a promise, so the site waits for the db creation
-// there is no error handling, oops
-const createDb = () => {
-  return new Promise((resolve, reject) => {
-
-    // open db, sends an event, upgradeneeded
-    const request = window.indexedDB.open("SampleDatabase");
-
-    request.onerror = (event) => {
-      console.error("database request failed");
-      console.error(event)
-      reject(event)
-    };
-
-    request.onsuccess = (event) => {
-
-      const sampledb = event.target.result;
-      console.log("sample database created")
-
-      resolve(sampledb)
-    };
-
-    // handle opening request
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      console.log(`Upgrading to version ${db.version}`);
-
-      // Create an objectStore for this database
-      const objectStore = db.createObjectStore("SampleDatabase", {
-        keyPath: "taskTitle",
-      });
-
-      // define what data items the objectStore will contain
-      objectStore.createIndex("hours", "hours", { unique: false });
-      objectStore.createIndex("minutes", "minutes", { unique: false });
-      objectStore.createIndex("day", "day", { unique: false });
-      objectStore.createIndex("month", "month", { unique: false });
-      objectStore.createIndex("year", "year", { unique: false });
-    };
-
-    request.onblocked = (event) => {
-      console.log('blocked ...', event);
-
-      event.target.result.close();
-    };
-
-  });
-};
-
-const sampledb = await createDb()
-console.log(sampledb)
-
-sampledb.onerror = (event) => {
-  // Generic error handler for all errors targeted at this database's
-  // requests!
-  console.error(`Database error: ${event.target.errorCode}`);
-};
-
-// sets all audio to local db
-sampleSources.forEach((sample, _index) => {
-  const sampleAudio = new Audio(sample.url);
-
-
+// save initial samples
+storeInitial.samples.forEach((sample, index) => {
+  const source = sampleSources[index]
+  // TODO: Array buffer for music file, to save it
+  new File(sample.url, sample.name)
+  sample.url = source.url
+  sample.name = source.name
 });
 
 const audioReducer = (state = storeInitial, action) => {
@@ -188,7 +127,7 @@ class DrumButtons extends React.Component {
     // remember to bind this if you make any methods inside object
     this.playSound = this.playSound.bind(this);
     this.keyDown = this.keyDown.bind(this);
-
+    this.deleteAudio = this.deleteAudio.bind(this);
   }
 
   keyDown(event) {
@@ -199,16 +138,28 @@ class DrumButtons extends React.Component {
     });
   };
 
-  playSound(event, sample) {
+  async deleteAudio(audio) {
+    setTimeout(() => audio.remove(), 1000);
+  }
+
+  async playSound(event, sample) {
     event.preventDefault();
 
-    let audio = $(`#${sample.key}`)[0];
+    // the tests wont pass if you don't play audio from the 
+    // exact element, but it will not play new audio quickly enough from 
+    // the same button if you don't create a new audio element.
+    const audio = $(`#${sample.key}`)[0]
+    const audioClone = audio.cloneNode(false)
+    const audioParent = audio.parentNode
+
     audio.play();
+
+    audioParent.appendChild(audioClone);
+
+    this.deleteAudio(audio);
 
     store.dispatch({ type: "lastPlayed/update", payload: sample })
   }
-
-  // TODO: something is too slow with playing keys, maybe have to cancel prev audio to play next
 
   componentDidMount() {
     document.addEventListener("keydown", this.keyDown);
