@@ -87,7 +87,7 @@ storeInitial.samples.forEach((sample, index) => sample.reactKey = index)
 
 // save initial samples
 const saveSamples = async (sampleList) => {
-  // can't use forEach loop with await, map could work
+  // can't use forEach loop with await
   for (let index = 0; index < sampleList.length; index++) {
     const source = sampleSources[index]
     const sample = sampleList[index]
@@ -122,12 +122,17 @@ class DrumButtons extends React.Component {
   constructor(props) {
     super(props);
 
-    this.state = store.getState();
+    this.state = {
+      ...store.getState(),
+      keyPressed: false,
+      deleteLoop: true,
+    };
 
     // remember to bind this if you make any methods inside object
     this.playSound = this.playSound.bind(this);
     this.keyDown = this.keyDown.bind(this);
     this.deleteAudio = this.deleteAudio.bind(this);
+
   }
 
   keyDown(event) {
@@ -139,46 +144,87 @@ class DrumButtons extends React.Component {
   };
 
   async deleteAudio() {
-    // TODO: use something that returns a list, not some odd thing here: 
-    const remove = document.getElementsByTagName(".remove");
 
-    console.log(remove)
-    if (remove) {
-      remove.forEach((node, _i) => {
-        node.remove();
-      })
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    let i = 0;
+    while (this.state.deleteLoop) {
+      // console.log("loop alive")
+      // for actually doing the removing of old audio
+      const removeAll = () => {
+        const remove = document.querySelectorAll(".remove");
+        if (remove.length > 0) {
+          console.log("removed:", remove, "i:", i)
+          remove.forEach((node, _i) => {
+            node.remove();
+          })
+        };
+      };
+
+      // set delay
+      await sleep(4000);
+
+      // delete if key hasn't been pressed during delay
+      if (!this.state.keyPressed) {
+        removeAll()
+      };
+
+      // key has not been pressed
+      this.setState({ keyPressed: false })
     };
-    // setTimeout(() => audio.id = "remove", 1000);
   }
 
   async playSound(event, sample) {
+    // TODO: use Web Audio API
     event.preventDefault();
 
     // the tests wont pass if you don't play audio from the 
     // exact element, but it will not play new audio quickly enough from 
     // the same button if you don't create a new audio element.
-    const audio = $(`#${sample.key}`)[0]
-    const audioClone = audio.cloneNode(false)
-    const audioParent = audio.parentNode
+    try {
+      const audio = $(`#${sample.key}`)[0]
+      // const audioClone = audio.cloneNode(false)
 
-    audio.muted = true;
-    audio.play();
-    audio.classList.add("remove")
+      try {
+        audio.c
+        // audio.muted = true;
+        await audio.play();
 
-    audioClone.play();
-    audioParent.appendChild(audioClone);
+        // await audioClone.play();
+      } catch (err) {
+        console.error("error playing audio", err)
+      }
 
-    this.deleteAudio();
+      // const audioParent = audio.parentNode
+      // audioParent.appendChild(audioClone);
 
-    store.dispatch({ type: "lastPlayed/update", payload: sample })
+      // for delete audio, needs to know button has been pressed
+      this.setState({ keyPressed: true })
+
+      // audio.classList.add("remove")
+
+      store.dispatch({ type: "lastPlayed/update", payload: sample })
+
+    } catch (err) {
+      console.error("error processing audio", err)
+    }
+
   }
 
   componentDidMount() {
     document.addEventListener("keydown", this.keyDown);
+
+    // start cleanup loop
+    this.deleteAudio()
   };
 
   componentWillUnmount() {
     document.removeEventListener("keydown", this.keyDown);
+
+    // stop cleanup loop
+    this.setState({ deleteLoop: false });
   }
 
   render() {
@@ -195,7 +241,7 @@ class DrumButtons extends React.Component {
                 id={`${sample.name}-button`}
                 key={`${sample.reactKey}-button`}
                 // when clicked, send the sample object to playsound
-                onClick={(event) => this.playSound(event, sample)}
+                onClick={async (event) => this.playSound(event, sample)}
                 className="drum-pad"
                 type="button"
               >
