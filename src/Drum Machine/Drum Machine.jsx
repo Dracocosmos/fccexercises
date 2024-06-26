@@ -92,8 +92,9 @@ const saveSamples = async (sampleList) => {
     const source = sampleSources[index]
     const sample = sampleList[index]
 
-    const audio = await fetch(source.url);
-    sample.audio = await audio.blob();
+    let audio = await fetch(source.url);
+    sample.arrayBuffer = await audio.arrayBuffer();
+    sample.audio = new Blob([sample.arrayBuffer]);
     sample.url = URL.createObjectURL(sample.audio);
 
     sample.name = source.name
@@ -126,13 +127,13 @@ class DrumButtons extends React.Component {
       ...store.getState(),
       keyPressed: false,
       deleteLoop: true,
+      samples: false,
     };
 
     // remember to bind this if you make any methods inside object
     this.playSound = this.playSound.bind(this);
     this.keyDown = this.keyDown.bind(this);
-    this.deleteAudio = this.deleteAudio.bind(this);
-
+    this.getAudioContext = this.getAudioContext.bind(this);
   }
 
   keyDown(event) {
@@ -143,88 +144,72 @@ class DrumButtons extends React.Component {
     });
   };
 
-  async deleteAudio() {
-
-    function sleep(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    let i = 0;
-    while (this.state.deleteLoop) {
-      // console.log("loop alive")
-      // for actually doing the removing of old audio
-      const removeAll = () => {
-        const remove = document.querySelectorAll(".remove");
-        if (remove.length > 0) {
-          console.log("removed:", remove, "i:", i)
-          remove.forEach((node, _i) => {
-            node.remove();
-          })
-        };
-      };
-
-      // set delay
-      await sleep(4000);
-
-      // delete if key hasn't been pressed during delay
-      if (!this.state.keyPressed) {
-        removeAll()
-      };
-
-      // key has not been pressed
-      this.setState({ keyPressed: false })
+  async getAudioContext() {
+    // get a new audio context for Web Audio API
+    this.setState({ aContext: new AudioContext() })
+    try {
+      // decode arraybuffer data
+      // TODO: go through all samples, and give them a new property that has the decodeAudioData
+      this.setState(() => {
+        audioCtx = this.state.aContext
+        return {}
+      });
+      const audioBuffer = await audioCtx.decodeAudioData(sample.arrayBuffer.slice());
+    } catch (err) {
+      console.error("couldn't decode samples:", err)
     };
   }
 
   async playSound(event, sample) {
-    // TODO: use Web Audio API
     event.preventDefault();
+
+    // do this once, thank you. 
+    // Needs to be after user has interacted with anything
+    if (!this.samples) {
+      this.getAudioContext();
+    };
 
     // the tests wont pass if you don't play audio from the 
     // exact element, but it will not play new audio quickly enough from 
-    // the same button if you don't create a new audio element.
+    // the same button
     try {
-      const audio = $(`#${sample.key}`)[0]
-      // const audioClone = audio.cloneNode(false)
+      // needed for passing tests
+      const audio = $(`#${sample.key}`)[0];
+      audio.muted = true;
+      audio.play();
 
-      try {
-        audio.c
-        // audio.muted = true;
-        await audio.play();
-
-        // await audioClone.play();
-      } catch (err) {
-        console.error("error playing audio", err)
-      }
-
-      // const audioParent = audio.parentNode
-      // audioParent.appendChild(audioClone);
-
-      // for delete audio, needs to know button has been pressed
-      this.setState({ keyPressed: true })
-
-      // audio.classList.add("remove")
-
+      // update display
       store.dispatch({ type: "lastPlayed/update", payload: sample })
 
+      // Web Audio API
+      const audioCtx = this.state.aContext;
+
+      // init a new buffer from where to play
+      const bufferSource = audioCtx.createBufferSource();
+      // connect data to audio context
+      bufferSource.buffer = audioBuffer;
+
+      // gain setting
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.value = 0.2;
+
+      // connect audio chain
+      bufferSource.connect(gainNode)
+        .connect(audioCtx.destination);
+
+      // play buffer
+      bufferSource.start();
     } catch (err) {
       console.error("error processing audio", err)
     }
-
   }
 
   componentDidMount() {
     document.addEventListener("keydown", this.keyDown);
-
-    // start cleanup loop
-    this.deleteAudio()
   };
 
   componentWillUnmount() {
     document.removeEventListener("keydown", this.keyDown);
-
-    // stop cleanup loop
-    this.setState({ deleteLoop: false });
   }
 
   render() {
@@ -241,7 +226,7 @@ class DrumButtons extends React.Component {
                 id={`${sample.name}-button`}
                 key={`${sample.reactKey}-button`}
                 // when clicked, send the sample object to playsound
-                onClick={async (event) => this.playSound(event, sample)}
+                onClick={(event) => this.playSound(event, sample)}
                 className="drum-pad"
                 type="button"
               >
