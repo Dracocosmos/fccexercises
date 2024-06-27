@@ -1,6 +1,10 @@
 /* can't use * as selector on codepen */
 
 :root {
+}
+
+body {
+  /* these didn't work in root for some reason */
   box-sizing: border-box;
   margin: 0;
   padding: 0;
