@@ -1,3 +1,5 @@
+// no top level await in codepen!
+
 import ReactDOM from "react-dom";
 import React from "react";
 

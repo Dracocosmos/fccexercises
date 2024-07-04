@@ -296,7 +296,7 @@ class DrumDisplay extends React.Component {
         id="display"
         key="display-div"
       >
-        {lastPlayed ? lastPlayed.name : ""}
+        <p>{lastPlayed ? lastPlayed.name : ""}</p>
       </div>
     )
   }
