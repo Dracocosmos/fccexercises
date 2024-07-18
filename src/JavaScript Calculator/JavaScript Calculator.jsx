@@ -45,8 +45,11 @@ class formulaBlock {
     this.validNumber = false;
 
     if (this.type === "decimal point") {
-      this.type = "number"
-      this.value = "0."
+      this.type = "number";
+      this.value = "0.";
+      if (this.value === "-") {
+        this.value = "-0."
+      };
     };
   }
 
@@ -64,9 +67,15 @@ class formulaBlock {
     };
   }
 
+  removeTrailingDot() {
+    if (this.value.endsWith('.')) {
+      this.value = this.value.slice(0, -1);
+    };
+  }
+
   backspaceValue() {
     this.value = this.value.slice(0, -1);
-    this.checkIfValidNumber();
+    this.validNumber = false;
   }
 
   updateValue(value) {
@@ -74,6 +83,7 @@ class formulaBlock {
       case "operator":
         this.value = value;
         break;
+
       case "number":
         switch (value) {
           // if updating with decimal point
@@ -82,6 +92,7 @@ class formulaBlock {
               this.value = this.value + value;
             };
             break;
+
           // if turning number negative
           case "-":
             if (this.value.length === 0) {
@@ -98,13 +109,16 @@ class formulaBlock {
             };
             break;
 
+          // if updating with backspace
+          case "backspace":
+            break;
+
           // if updating with number
           default:
             this.value = this.value + value;
             break;
         };
 
-        this.checkIfValidNumber();
         break;
       default:
         break;
@@ -119,22 +133,93 @@ const calculatorReducer = (state = storeInitial, action) => {
       // all possible buttons
       const buttons = state.acceptableButtons;
       // a button object for pressed button
-      let currentButton = buttons[action.payload];
+      let pressedButton = buttons[action.payload];
 
       // if action is an alias
-      if (currentButton.type === "alias") {
-        action.payload = currentButton.aliasFor;
-        currentButton = buttons[currentButton.aliasFor];
+      if (pressedButton.type === "alias") {
+        action.payload = pressedButton.aliasFor;
+        pressedButton = buttons[pressedButton.aliasFor];
       };
 
-      const currentBlock = new formulaBlock(currentButton.type, action.payload);
+      // so that decimal point goes to number type
+      const pressedButtonType = pressedButton.type === "decimal point"
+        ? "number"
+        : pressedButton.type;
 
-      console.log(currentBlock)
+      const formula = state.currentFormula;
 
-      // console.log(formula)
+      // if first block, make new
+      if (formula.length === 0) {
+        const newBlock = new formulaBlock(pressedButton.type, action.payload)
+        formula.push(newBlock);
+
+        console.log(existingBlock)
+        console.log(...formula.map((block) => block.value))
+        return {
+          ...state,
+          currentFormula: formula
+        };
+      };
+      let existingBlock = formula[formula.length - 1];
+
+      // remove entries
+      if (pressedButtonType === 'backspace') {
+        // remove a single letter
+        existingBlock.backspaceValue();
+        // remove block
+        if (existingBlock.type === "backspace"
+          || existingBlock.value === "") {
+          formula.pop();
+        };
+
+        console.log(existingBlock)
+        console.log(...formula.map((block) => block.value))
+        return {
+          ...state,
+          currentFormula: formula
+        };
+      };
+
+      // if block types don't match
+      if (existingBlock.type !== pressedButtonType) {
+        // if negating a number
+        if (existingBlock.value === "-"
+          && existingBlock.type === "number"
+        ) {
+          console.log("hi")
+          console.log(existingBlock)
+          console.log(...formula.map((block) => block.value))
+          return {
+            ...state,
+            currentFormula: formula
+          };
+        };
+
+        // remove dot in previous block end
+        existingBlock.removeTrailingDot();
+
+        const newBlock = new formulaBlock(pressedButton.type, action.payload)
+        formula.push(newBlock);
+        existingBlock = formula[formula.length - 1];
+
+        // if block types match
+      } else {
+        // if negating a number
+        if (existingBlock.type === "operator"
+          && action.payload === "-") {
+          const newBlock = new formulaBlock("number", action.payload)
+          formula.push(newBlock);
+          existingBlock = formula[formula.length - 1];
+        } else {
+          existingBlock.updateValue(action.payload)
+        };
+      };
+      // TODO: . is not working, it does not create a 0 before it if negative
+      console.log(existingBlock)
+      console.log(...formula.map((block) => block.value))
       return {
         ...state,
-        // currentFormula: formula
+        currentFormula: formula
       };
     case 'formula/calculate':
       //TODO: make string valid, even if it has operator at end, 00 at start etc
