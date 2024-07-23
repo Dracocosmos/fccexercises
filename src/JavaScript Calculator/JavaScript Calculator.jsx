@@ -14,9 +14,9 @@ import "../../Public/JavaScript Calculator/JavaScript Calculator.css"
 import Reset from "../Reset";
 
 const storeInitial = {
-  currentTotal: 0,
+  currentTotal: "0",
   currentFormula: [],
-  currentFormulaString: "",
+  currentFormulaString: "0",
   acceptableButtons: {
     "0": { type: "number", id: "zero" },
     "1": { type: "number", id: "one" },
@@ -36,7 +36,8 @@ const storeInitial = {
     "+": { type: "operator", id: "add" },
     "=": { type: "enter", id: "equals" },
     "Enter": { type: "alias", id: "enter", aliasFor: "=" },
-    "Backspace": { type: "backspace", id: "backspace" }
+    "Backspace": { type: "backspace", id: "backspace", symbol: "<-" },
+    "Delete": { type: "clear", id: "clear", symbol: "C" }
   },
 };
 
@@ -167,7 +168,10 @@ const calculatorReducer = (state = storeInitial, action) => {
 
       const formula = state.currentFormula;
 
-      const returnHelper = () => {
+      const returnHelper = (returnId, message = "") => {
+        console.log(returnId, message)
+        // console.log(existingBlock)
+
         const formulaString = state.currentFormula.map((entry) => entry.value).join("");
         return {
           ...state,
@@ -199,15 +203,9 @@ const calculatorReducer = (state = storeInitial, action) => {
             break;
         }
 
-        console.log(newBlock, "new block created")
-        console.log(existingBlock, "1")
-        console.log(...formula.map((block) => block.value))
-        returnHelper();
-        return {
-          ...state,
-          currentFormula: formula
-        };
+        return returnHelper(1, "new block created");
       };
+
       let existingBlock = formula[formula.length - 1];
 
       // remove entries
@@ -220,25 +218,18 @@ const calculatorReducer = (state = storeInitial, action) => {
           formula.pop();
         };
 
-        console.log(existingBlock, "2")
-        console.log(...formula.map((block) => block.value))
-        return {
-          ...state,
-          currentFormula: formula
-        };
+        return returnHelper(2, "removed entry");
 
         // add entry if block types don't match
       } else if (existingBlock.type !== pressedButtonType) {
         // if negating a number
+        // whenever a combo of operator and a single - at
+        // the end of formula:
         if (existingBlock.value === "-"
           && existingBlock.type === "number"
         ) {
-          console.log(existingBlock, "3")
-          console.log(...formula.map((block) => block.value))
-          return {
-            ...state,
-            currentFormula: formula
-          };
+          formula.pop();
+          formula.pop();
         };
 
         // remove invalid previous block
@@ -251,6 +242,8 @@ const calculatorReducer = (state = storeInitial, action) => {
         formula.push(newBlock);
         existingBlock = formula[formula.length - 1];
 
+        return returnHelper(4, "block types do not match");
+
         // add entry if block types match
       } else {
         // if negating a number
@@ -259,27 +252,42 @@ const calculatorReducer = (state = storeInitial, action) => {
           const newBlock = new formulaBlock("number", action.payload)
           formula.push(newBlock);
           existingBlock = formula[formula.length - 1];
+          return returnHelper(5, "negating number");
         } else {
           existingBlock.updateValue(action.payload)
+          return returnHelper(6, "block types match");
         };
       };
-
-      console.log(existingBlock, "4")
-      console.log(...formula.map((block) => block.value))
-      return {
-        ...state,
-        currentFormula: formula
-      };
+      return returnHelper(6, "error, last return");
 
     case 'formula/calculate':
-      const formulaString = state.currentFormula.map((entry) => entry.value).join("");
+      const formulaArray = state.currentFormula.map((entry) => {
+        // negative values are surrounded by parentheses
+        if (entry.value.startsWith("-")
+          && entry.type === "number") {
+          return ("(" + entry.value + ")")
+        } else {
+          return entry.value
+        };
+      });
+      const formulaString = formulaArray.join("");
+
       const evaluatedString = eval(formulaString).toString();
 
-      console.log(evaluatedString)
+      console.log(formulaString, "=", evaluatedString)
       return {
         ...state,
         currentFormula: [new formulaBlock("number", evaluatedString)],
+        currentFormulaString: evaluatedString,
         currentTotal: evaluatedString
+      };
+    case 'formula/clear':
+      console.log("c")
+      return {
+        ...state,
+        currentFormula: [],
+        currentFormulaString: "0",
+        currentTotal: "0"
       };
     default:
       return state;
@@ -298,6 +306,10 @@ const userInput = (key) => {
       store.dispatch({
         type: "formula/calculate"
       })
+    } else if (key === "Delete") {
+      store.dispatch({
+        type: "formula/clear"
+      })
     } else {
       store.dispatch({
         type: 'currentFormula/update',
@@ -312,15 +324,20 @@ const Pad = (props) => {
   // on button press
   const handleButtonClick = (event) => {
     event.preventDefault();
-    userInput(event.target.classList.item(0))
+    userInput(event.target.attributes.buttonkey.value)
   };
 
   return (
     <button id={props.id}
       onClick={handleButtonClick}
-      className={`${props.button} pad-button`}
+      className={`b-${props.id} pad-button`}
+      buttonkey={props.button}
+      style={{ gridArea: `b-${props.id}` }}
     >
-      {props.button}
+      {props.symbol
+        // if a symbol exists, display it instead
+        ? props.symbol
+        : props.button}
     </button >
   )
 };
@@ -328,7 +345,7 @@ const Pad = (props) => {
 const NumberPad = () => {
   // Send all of the acceptable keys to create individual buttons
   return (
-    <div id="buttons-div">
+    <div id="button-container">
       {Object.entries(store.getState().acceptableButtons)
         .map((buttonInfo, index) => {
           // only real buttons, not their aliases
@@ -343,15 +360,17 @@ const NumberPad = () => {
   )
 };
 
-// TODO: does not show currentformula string or otherwise
 const Display = (props) => {
-  // const formulaString = props.formula.currentFormula.map(
-  //   (block) => block.value).join("");
 
   console.log(props.formula.currentFormula, "in Display")
   return (
-    <div>
-      {[props.formula.currentFormula, props.formula.currentTotal]}
+    <div id="display-container">
+      <div id="display">
+        {props.formula.currentFormula}
+      </div>
+      <div id="display-total">
+        {props.formula.currentTotal}
+      </div>
     </div>
   )
 }
@@ -375,7 +394,7 @@ let Calculator = (props) => {
   }, []);
 
   return (
-    <div>
+    <div id="calculator-container">
       <Display formula={props}></Display>
       <NumberPad></NumberPad>
     </div>

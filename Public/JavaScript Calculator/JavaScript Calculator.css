@@ -8,4 +8,36 @@ body {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  
+  --buttonWidth: 80px;
+  --buttonColAmount: 4;
+}
+
+#calculator-container {
+  margin: 10px auto;
+  height: 600px;
+  width: calc(var(--buttonWidth) * 
+    var(--buttonColAmount))
+}
+
+#display-container * {
+  height: 20px;
+  background-color: grey;
+}
+
+#button-container {
+  display: grid;
+  /* the buttons map themselves in the js file */
+  grid-template:
+    'b-clear b-divide b-multiply b-subtract'
+    'b-seven b-eight b-nine b-add'
+    'b-four b-five b-six b-backspace'
+    'b-one b-two b-three b-equals'
+    'b-zero b-zero b-decimal b-equals'
+  ;
+  grid-template-columns: repeat(
+    var(--buttonColAmount),
+    var(--buttonWidth)
+  );
+  grid-template-rows: repeat(5, 80px);
 }
