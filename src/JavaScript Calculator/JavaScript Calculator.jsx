@@ -169,8 +169,7 @@ const calculatorReducer = (state = storeInitial, action) => {
       const formula = state.currentFormula;
 
       const returnHelper = (returnId, message = "") => {
-        console.log(returnId, message)
-        // console.log(existingBlock)
+        // console.log(returnId, message)
 
         const formulaString = state.currentFormula.map((entry) => entry.value).join("");
         return {
@@ -230,6 +229,10 @@ const calculatorReducer = (state = storeInitial, action) => {
         ) {
           formula.pop();
           formula.pop();
+          // if first entry, no new block should be created
+          if (formula.length === 0) {
+            return returnHelper(7, "block types do not match, new block not created")
+          };
         };
 
         // remove invalid previous block
@@ -261,28 +264,68 @@ const calculatorReducer = (state = storeInitial, action) => {
       return returnHelper(6, "error, last return");
 
     case 'formula/calculate':
-      const formulaArray = state.currentFormula.map((entry) => {
-        // negative values are surrounded by parentheses
-        if (entry.value.startsWith("-")
+      // removeCount is how many entries to take out from array,
+      // so that it ends in number
+      let removeCount = 0;
+      let prevArrayEntry = null;
+      const formulaArray = state.currentFormula.map((entry, index) => {
+        let returnVal = null;
+        // if the last entry is not a number, don't add it
+        if (index === state.currentFormula.length - 1
+          && (entry.type === "operator" || entry.value === "-")) {
+          removeCount += 1;
+          if (prevArrayEntry &&
+            prevArrayEntry.type === "operator") {
+            removeCount += 1;
+          };
+          returnVal = null;
+          // negative values are surrounded by parentheses
+        } else if (entry.value.startsWith("-")
           && entry.type === "number") {
-          return ("(" + entry.value + ")")
+          returnVal = ("(" + entry.value + ")")
         } else {
-          return entry.value
+          returnVal = entry.value
         };
+
+        prevArrayEntry = entry;
+        return returnVal;
       });
+
+      // pop out not numbers
+      while (removeCount > 0) {
+        formulaArray.pop();
+        removeCount -= 1;
+      };
+
+      // make array into evaluatable string
       const formulaString = formulaArray.join("");
 
-      const evaluatedString = eval(formulaString).toString();
+      // eval string
+      let evaluatedString = formulaString
+        ? eval(formulaString).toString()
+        : "0";
 
-      console.log(formulaString, "=", evaluatedString)
+
+      // if calc ended in infinite
+      let userMessage = null;
+      if (evaluatedString === "Infinity") {
+        evaluatedString = "0"
+        userMessage = "Infinity"
+
+      };
+
+      // console.log(formulaString, "=", evaluatedString)
       return {
         ...state,
         currentFormula: [new formulaBlock("number", evaluatedString)],
         currentFormulaString: evaluatedString,
-        currentTotal: evaluatedString
+        // if there is a message, make total it
+        currentTotal: userMessage
+          ? userMessage
+          : evaluatedString
       };
     case 'formula/clear':
-      console.log("c")
+      // console.log("c")
       return {
         ...state,
         currentFormula: [],
@@ -361,8 +404,8 @@ const NumberPad = () => {
 };
 
 const Display = (props) => {
+  // console.log(props.formula.currentFormula, "in Display")
 
-  console.log(props.formula.currentFormula, "in Display")
   return (
     <div id="display-container">
       <div id="display">
