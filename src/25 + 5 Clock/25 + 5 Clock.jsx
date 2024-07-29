@@ -13,24 +13,76 @@ import "../../Public/25 + 5 Clock/25 + 5 Clock.css"
 // for resetting to the exercise menu
 import Reset from "../Reset";
 
+class clock {
+  constructor(breakTime, sessionTime) {
+    this.breakTime = breakTime * 60 * 1000
+    this.sessionTime = sessionTime * 60 * 1000
+    // how much time left in the currently running session
+    // either pause or break
+    this.currentTimeLeft = this.sessionTime
+    this.loopCount = 0
+    this.displayTime = Math.floor(this.currentTimeLeft / 1000)
+    console.log(this.displayTime)
+    // currentTimeMs: new Date().getTime(),
+    // startTimeMs: 0,
+    // onPauseTimeLeftMs: 0,
+    // blockStartMs: 0,
+    // blockEndMs: 0,
+  }
+
+  async loop() {
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    while (
+      this.currentTimeLeft > 10
+      && this.loopCount < 10000
+    ) {
+      await sleep(10)
+      const currentTime = Date.now()
+      this.currentTimeLeft = (this.startTime + this.sessionTime) - currentTime
+      this.displayTime = Math.floor(this.currentTimeLeft / 1000)
+      this.loopCount += 1
+      // TODO: figure out if firing an event is a good idea
+    }
+  }
+
+  start() {
+    this.startTime = Date.now()
+    this.loop()
+  }
+
+  pause() {
+  }
+
+  reset() {
+  }
+}
+
 const storeInitial = {
   breakTime: 5,
   breakTime: 1,
   sessionTime: 25,
   sessionTime: 1,
   active: false,
-  // currentTimeMs: new Date().getTime(),
-  currentTimeMs: 0,
+  currentTimer: null,
+  clock: null,
 };
+// use values from initial store to init a clock
+storeInitial.clock = new clock(
+  storeInitial.breakTime,
+  storeInitial.sessionTime,
+);
 
 const clockReducer = (state = storeInitial, action) => {
 
   // for setting break and session times
-  function validNumber(number, maxVal = 60) {
-    return (number <= maxVal)
-      && (number >= 0)
-  };
   function newNumber(oldNumber, direction) {
+    function validNumber(number, maxVal = 60) {
+      return (number <= maxVal)
+        && (number >= 0)
+    };
+
     let newNumber = direction === "inc"
       ? oldNumber + 1
       : oldNumber - 1
@@ -54,9 +106,16 @@ const clockReducer = (state = storeInitial, action) => {
         sessionTime: newNumber(state.sessionTime, action.payload)
       };
     case 'clockstate/update':
+      state.active
+        ? state.clock.pause()
+        : state.clock.start()
       return {
         ...state,
         active: !state.active
+      };
+    case 'clock/reset':
+      return {
+        ...state,
       };
     default:
       return state;
@@ -94,14 +153,6 @@ let SelectorButtons = (props) => {
   )
 }
 
-// const mapDispatchToProps = (dispatch) => {
-//   return {
-//     dispatch
-//   };
-// }
-const mapButtonsStateToProps = (state) => ({ breakTime: state.breakTime })
-SelectorButtons = connect(mapButtonsStateToProps)(SelectorButtons)
-
 let BreakSelector = (props) => {
   return (
     <div id="breakselector-container">
@@ -111,11 +162,14 @@ let BreakSelector = (props) => {
       <div id="break-length">
         {props.breakTime}
       </div>
-      <SelectorButtons for="break"></SelectorButtons>
+      <SelectorButtons
+        for="break"
+        dispatch={props.dispatch}
+      >
+      </SelectorButtons>
     </div>
   )
 }
-
 const mapBreakStateToProps = (state) => ({ breakTime: state.breakTime })
 BreakSelector = connect(mapBreakStateToProps)(BreakSelector)
 
@@ -128,11 +182,14 @@ let SessionSelector = (props) => {
       <div id="session-length">
         {props.sessionTime}
       </div>
-      <SelectorButtons for="session"></SelectorButtons>
+      <SelectorButtons
+        for="session"
+        dispatch={props.dispatch}
+      >
+      </SelectorButtons>
     </div>
   )
 }
-
 const mapSessionStateToProps = (state) => ({ sessionTime: state.sessionTime })
 SessionSelector = connect(mapSessionStateToProps)(SessionSelector)
 
@@ -145,7 +202,7 @@ const ClockAudio = () => {
   )
 }
 
-let ClockDisplay = (props) => {
+const ClockDisplay = (props) => {
   // mm:ss 25:00
   return (
     <div id="time-left">
@@ -154,18 +211,17 @@ let ClockDisplay = (props) => {
   )
 }
 
-let ClockControls = (props) => {
 
-  // startTimeMs: 0,
-  // onPauseTimeLeftMs: 0,
-  // blockStartMs: 0,
-  // blockEndMs: 0,
+const ClockControls = (props) => {
 
   const handleStartStop = (event) => {
+    event.preventDefault()
     props.dispatch({ type: 'clockstate/update' })
   }
 
   const handleReset = (event) => {
+    event.preventDefault()
+    props.dispatch({ type: 'clock/reset' })
   }
 
   return (
@@ -186,9 +242,11 @@ let ClockControls = (props) => {
   )
 }
 
-let Clock = (props) => {
+let ReactClock = (props) => {
   return (
     <div>
+      <BreakSelector></BreakSelector>
+      <SessionSelector></SessionSelector>
       <div id="timer-label">
         Session
       </div>
@@ -199,14 +257,12 @@ let Clock = (props) => {
   )
 }
 const mapClockStateToProps = (state) => ({ active: state.active })
-Clock = connect(mapClockStateToProps)(Clock)
+ReactClock = connect(mapClockStateToProps)(ReactClock)
 
 ReactDOM.render(
   <Provider store={store}>
     <Reset></Reset>
-    <BreakSelector></BreakSelector>
-    <SessionSelector></SessionSelector>
-    <Clock></Clock>
+    <ReactClock></ReactClock>
   </Provider>,
   $("#root")[0]
 );
