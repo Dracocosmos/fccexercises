@@ -15,55 +15,123 @@ import Reset from "../Reset";
 
 class clock {
   constructor(breakTime, sessionTime) {
-    this.breakTime = breakTime * 60 * 1000
-    this.sessionTime = sessionTime * 60 * 1000
-    // how much time left in the currently running session
-    // either pause or break
-    this.currentTimeLeft = this.sessionTime
-    this.loopCount = 0
-    this.displayTime = Math.floor(this.currentTimeLeft / 1000)
-    console.log(this.displayTime)
-    // currentTimeMs: new Date().getTime(),
-    // startTimeMs: 0,
-    // onPauseTimeLeftMs: 0,
-    // blockStartMs: 0,
-    // blockEndMs: 0,
+    this._clockSetup(breakTime, sessionTime)
   }
 
-  async loop() {
+  // for both reset and constructor
+  _clockSetup(breakTime, sessionTime) {
+    this.breakTime = breakTime * 60 * 1000
+    this.sessionTime = sessionTime * 60 * 1000
+    this.sessionTimeMinutes = sessionTime
+    this.breakTimeMinutes = breakTime
+
+    this.nextBlockGenerator = this._timeGenerator(this.breakTime, this.sessionTime)
+    this.currentBlockTime = this.nextBlockGenerator.next().value
+
+    this.loopActive = false
+
+    // how much time left in the currently running block
+    // either pause or break
+    this.timeLeftSeconds = this.currentBlockTime / 60
+
+    const tempS = this.sessionTimeMinutes.toString()
+    this.displayString = tempS.length > 1
+      ? tempS + ":00"
+      : "0" + tempS + ":00"
+
+    console.log(this.displayString)
+  }
+
+  // yields times given, first sessionT, then breakT
+  * _timeGenerator(breakT, sessionT) {
+    let lastValue = null
+    while (true) {
+      lastValue = lastValue === sessionT
+        ? breakT
+        : sessionT
+      yield lastValue
+    }
+  }
+
+  async _updateTimes() {
+    // get new time in ms
+    const currentTime = Date.now()
+
+    // new time left in ms
+    this.currentBlockTime = this.currentBlockEndTime - currentTime
+    this.currentBlockTime = this.currentBlockTime < 0
+      ? 0
+      : this.currentBlockTime
+
+    // time in seconds for if you want to update, didn't want to compare strings
+    // also for making new string
+    const currentTimeLeftSeconds = Math.floor(this.currentBlockTime / 1000)
+
+    // if there has been a change in seconds, not milliseconds, update
+    if (this.timeLeftSeconds - currentTimeLeftSeconds != 0) {
+      // save for next comparison
+      this.timeLeftSeconds = currentTimeLeftSeconds
+
+      // for updating display, first make numbers
+      const displayTimeMinutes = Math.floor(currentTimeLeftSeconds / 60)
+      const displayTimeSeconds = currentTimeLeftSeconds - displayTimeMinutes * 60
+      // then make string of those numbers
+      const addZeroReturnString = (number) => {
+        let string = number.toString()
+        return string.length > 1
+          ? string
+          : "0" + string
+      }
+      this.displayString = addZeroReturnString(displayTimeMinutes)
+        + ":"
+        + addZeroReturnString(displayTimeSeconds)
+
+      console.log(this.displayString)
+    }
+
+  }
+
+  async _loop() {
+    this.loopActive = true
+
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
     while (
-      this.currentTimeLeft > 10
-      && this.loopCount < 10000
+      this.loopActive === true
     ) {
       await sleep(10)
-      const currentTime = Date.now()
-      this.currentTimeLeft = (this.startTime + this.sessionTime) - currentTime
-      this.displayTime = Math.floor(this.currentTimeLeft / 1000)
-      this.loopCount += 1
-      // TODO: figure out if firing an event is a good idea
+      // async function so loop does not lag
+      this._updateTimes()
+
+      // if timer has run out
+      if (this.currentBlockTime < 9) {
+        this.currentBlockTime = this.nextBlockGenerator.next().value
+        this.currentBlockEndTime = this.currentBlockEndTime + this.currentBlockTime
+      }
     }
   }
 
   start() {
     this.startTime = Date.now()
-    this.loop()
+    this.currentBlockEndTime = this.currentBlockTime + this.startTime
+    this._loop()
   }
 
   pause() {
+    this.loopActive = false
   }
 
   reset() {
+    this._clockSetup(this.breakTimeMinutes, this.sessionTimeMinutes)
   }
 }
 
 const storeInitial = {
   breakTime: 5,
-  breakTime: 1,
+  breakTime: 0.2,
   sessionTime: 25,
-  sessionTime: 1,
+  sessionTime: 0.1,
   active: false,
   currentTimer: null,
   clock: null,
@@ -114,6 +182,7 @@ const clockReducer = (state = storeInitial, action) => {
         active: !state.active
       };
     case 'clock/reset':
+      state.clock.reset()
       return {
         ...state,
       };
