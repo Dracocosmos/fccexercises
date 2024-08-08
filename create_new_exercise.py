@@ -43,6 +43,7 @@ if paths_found:
         # copy from template to new folder
         try: 
             shutil.copytree(template_paths[path_name], path)
+
             pass
         except Exception as e:
             print("couldn't create new files ", e)
@@ -82,13 +83,16 @@ if paths_found:
             # parse json
             parsed_json = json.load(file)
             json_list = parsed_json["list"]
+            print(json_list)
 
             # use folders in src as an exercise list
-            folder_list = [entry.name for entry in os.scandir("./src/") if entry.is_dir()]
-            try:
-                folder_list.remove(template_string)
-            except:
-                pass
+            folder_list = [
+                    entry.name for entry in os.scandir("./src/") if entry.is_dir()]
+
+            # remove any templates
+            folder_list = [
+                    entry for entry in folder_list if template_string not in entry]
+
             parsed_json["list"] = folder_list
 
             # write new json file
