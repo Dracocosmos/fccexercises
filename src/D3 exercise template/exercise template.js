@@ -5,11 +5,6 @@ import ReactDOM from "react-dom";
 import "../../Public/exercise template/exercise template.css"
 // for resetting to the exercise menu
 import Reset from "../Reset";
-
-import $ from "jquery";
-
-import * as d3 from "d3"
-
 ReactDOM.render(
   <div>
     exercise template
@@ -17,3 +12,9 @@ ReactDOM.render(
   </div>,
   $("#root")[0]
 );
+
+import $ from "jquery";
+
+import * as d3 from "d3"
+
+// code under here
