@@ -16,35 +16,53 @@ import $ from "jquery";
 
 import * as d3 from "d3"
 
-// code under here
-
 // const data = [[1, 2], [2, 4], [3, 6], [2, 6]]
 
 const main = (data) => {
   console.log(data)
-  // console.log(data.data[0])
-  // data = data.data
-  const width = 1100;
-  const height = 400;
-  const scalePadding = 50;
-  const topPadding = 10;
+
+  const width = 1100,
+    height = 400,
+    scalePadding = 50,
+    topPadding = 10,
+    circleSize = 10,
+    parseYear = d3.timeParse("%Y"),
+    parseTime = d3.timeParse("%M:%S")
 
   // scale horizontal
   const xSc = d3.scaleUtc()
-    .domain([d3.min(data, (d) => {
-      return d["Year"]
-    }), d3.max(data, (d) => {
-      return d["Year"]
-    })])
-    .range([scalePadding, width - scalePadding]);
+    .domain([
+      d3.min(data, (d) => {
+        return (parseYear(d["Year"]))
+      }),
+      d3.max(data, (d) => {
+        return (parseYear(d["Year"]))
+      })])
+    .range([scalePadding + circleSize, width - scalePadding]);
 
   // scale vertical
-  const ySc = d3.scaleLinear()
-    .domain([0, d3.max(data, (d) => {
-      console.log(new Date(`0000-01-01T00:` + d["Time"]))
-      return d["Time"]
-    })])
-    .range([height - scalePadding, topPadding]);
+  const ySc = d3.scaleTime()
+    .domain([
+      d3.min(data, (d) => {
+        // console.log(new Date("0000-01-01T00:" + d["Time"]))
+        // console.log(parseTime(d["Time"]))
+        // return parseTime(d["Time"])
+        return new Date("0000-01-01T00:" + d["Time"])
+      }),
+      d3.max(data, (d) => {
+        // return parseTime(d["Time"])
+        return new Date("0000-01-01T00:" + d["Time"])
+      })])
+    .nice()
+    // .domain([
+    //   d3.min(data, (d) => {
+    //     return d["Seconds"]
+    //   }),
+    //   d3.max(data, (d) => {
+    //     return d["Seconds"]
+    //   })])
+    .range([height - scalePadding, topPadding])
+
 
   // main svg
   const svg = d3.select("body")
@@ -71,14 +89,33 @@ const main = (data) => {
     .enter()
     .append("circle")
     .attr("cx", (d) => {
-      return xSc(d["Year"])
+      return xSc(parseYear(d["Year"]))
     })
     .attr("cy", (d) => {
-      return ySc(d["Time"])
+      // return parseTime(d["Time"])
+      return ySc(new Date("0000-01-01T00:" + d["Time"]))
     })
-    .attr('r', 10)
+    .attr('r', circleSize)
     .attr('class', "dot")
     .style('fill', 'green');
+  // create axis lines
+  // TODO: add more ticks down bottom
+  svg.append("g")
+    .attr("transform", `translate(0,${height - scalePadding})`)
+    .call(d3.axisBottom(xSc)
+      // otherwise it'll have a tick every 2 years
+      // .ticks(d3.utcYear.every(1))
+      .ticks(data.length)
+      // .ticks(data.map((d) => d["Year"]))
+      // .tickFormat(d3.format("d"))
+    )
+    .attr("id", "x-axis")
+  svg.append("g")
+    .attr("transform", `translate(${scalePadding},0)`)
+    .call(d3.axisLeft(ySc)
+      .tickFormat(d3.utcFormat("%M:%S"))
+    )
+    .attr("id", "y-axis")
 }
 
 // fetches data from localstorage,
