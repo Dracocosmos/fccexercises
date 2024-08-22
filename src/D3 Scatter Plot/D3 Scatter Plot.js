@@ -30,13 +30,13 @@ const main = (data) => {
     parseTime = d3.timeParse("%M:%S")
 
   // scale horizontal
-  const xSc = d3.scaleUtc()
+  const xSc = d3.scaleLinear()
     .domain([
       d3.min(data, (d) => {
-        return (parseYear(d["Year"]))
+        return d["Year"]
       }),
       d3.max(data, (d) => {
-        return (parseYear(d["Year"]))
+        return d["Year"]
       })])
     .range([scalePadding + circleSize, width - scalePadding]);
 
@@ -44,37 +44,27 @@ const main = (data) => {
   const ySc = d3.scaleTime()
     .domain([
       d3.min(data, (d) => {
-        // console.log(new Date("0000-01-01T00:" + d["Time"]))
-        // console.log(parseTime(d["Time"]))
-        // return parseTime(d["Time"])
         return new Date("0000-01-01T00:" + d["Time"])
       }),
       d3.max(data, (d) => {
-        // return parseTime(d["Time"])
         return new Date("0000-01-01T00:" + d["Time"])
       })])
     .nice()
-    // .domain([
-    //   d3.min(data, (d) => {
-    //     return d["Seconds"]
-    //   }),
-    //   d3.max(data, (d) => {
-    //     return d["Seconds"]
-    //   })])
     .range([height - scalePadding, topPadding])
-
 
   // main svg
   const svg = d3.select("body")
     .append("svg")
     .attr("width", width)
     .attr("height", height)
+    .attr('id', 'svg')
 
   // background
   svg.append("rect")
     .attr("width", "100%")
     .attr("height", "100%")
-    .attr("fill", "lightgrey");
+    .attr("fill", "lightgrey")
+    .attr("id", 'svg-background')
 
   // title text
   svg.append("text")
@@ -83,37 +73,84 @@ const main = (data) => {
     .attr("y", 100)
     .attr("id", "title")
 
+  // on hover data box
+  const tooltip = d3.select('body')
+    .append('rect')
+    .attr('class', 'tooltip')
+    .attr('position', 'absolute')
+    .style("opacity", 0)
+    .style("width", "200px")
+
+  // mouseover for points
+  // it passes both event and data? don't know where that's defined.
+  const mouseOver = (e, d) => {
+    tooltip.html(() => {
+      // creates a data entry from string given
+      const entry = (str) => {
+        const returnString =
+          '<span class="tooltip-label">' +
+          str + ': ' +
+          '</span>' +
+          '<span class="tooltip-data">' +
+          d[str] +
+          '</span>' +
+          '<br />'
+        return returnString
+      }
+      // these are the data entries that get entered,
+      // order matters
+      const showThese = [
+        'Name',
+        'Nationality',
+        'Time',
+        'Place',
+        'Year',
+        'Doping'
+      ]
+      // join with nothing, the <br /> in entry() ends entries
+      return showThese.map((string) => entry(string)).join('')
+    })
+      // make box visible
+      .style("opacity", 1)
+      // change box location
+      .style("left", '100px')
+      .style("top", '100px')
+  }
+  const mouseLeave = (e, d) => {
+    tooltip.style("opacity", 0)
+  }
+
   // plot points
-  svg.selectAll("circle")
+  const circles = svg.selectAll("circle")
     .data(data)
     .enter()
     .append("circle")
     .attr("cx", (d) => {
-      return xSc(parseYear(d["Year"]))
+      return xSc(d["Year"])
     })
     .attr("cy", (d) => {
-      // return parseTime(d["Time"])
       return ySc(new Date("0000-01-01T00:" + d["Time"]))
     })
     .attr('r', circleSize)
     .attr('class', "dot")
+    .on('mouseover', mouseOver)
+    .on('mouseleave', mouseLeave)
     .style('fill', 'green');
+
+
   // create axis lines
-  // TODO: add more ticks down bottom
   svg.append("g")
-    .attr("transform", `translate(0,${height - scalePadding})`)
+    .attr("transform", `translate(0,${height - scalePadding + circleSize})`)
     .call(d3.axisBottom(xSc)
-      // otherwise it'll have a tick every 2 years
-      // .ticks(d3.utcYear.every(1))
-      .ticks(data.length)
-      // .ticks(data.map((d) => d["Year"]))
-      // .tickFormat(d3.format("d"))
+      // otherwise it'll have a tick every half year
+      .ticks(data.length / 2)
+      .tickFormat((d) => d.toString())
     )
     .attr("id", "x-axis")
   svg.append("g")
     .attr("transform", `translate(${scalePadding},0)`)
     .call(d3.axisLeft(ySc)
-      .tickFormat(d3.utcFormat("%M:%S"))
+      .tickFormat(d3.timeFormat("%M:%S"))
     )
     .attr("id", "y-axis")
 }
@@ -122,6 +159,7 @@ const main = (data) => {
 // and then from outside site, then runs main program
 let data = sessionStorage.getItem("sctPlotData")
 if (data === null) {
+  console.log("fetching data")
   fetch('https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json')
     // don't know why, but the response has a json function?
     // which gives a js object
@@ -133,7 +171,6 @@ if (data === null) {
     .then(respData => {
       // save object as json
       sessionStorage.setItem("sctPlotData", JSON.stringify(respData))
-      console.log("fetching data")
       main(respData)
     })
     .catch(error => {
