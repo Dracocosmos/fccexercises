@@ -35,19 +35,20 @@ const main = (data) => {
       }),
       d3.max(data, (d) => {
         return d["Year"]
-      })])
+      })
+    ])
     .range([scalePadding + circleSize, width - scalePadding]);
 
   // scale vertical
   const ySc = d3.scaleTime()
     .domain([
       d3.min(data, (d) => {
-        return new Date("0000-01-01T00:" + d["Time"])
+        return new Date("1900-01-01T00:" + d["Time"])
       }),
       d3.max(data, (d) => {
-        return new Date("0000-01-01T00:" + d["Time"])
-      })])
-    .nice()
+        return new Date("1900-01-01T00:" + d["Time"])
+      })
+    ])
     .range([height - scalePadding, topPadding])
 
   // main svg
@@ -56,6 +57,7 @@ const main = (data) => {
     .attr("width", width)
     .attr("height", height)
     .attr('id', 'svg')
+    .style("margin-left", "5vw")
 
   // background
   svg.append("rect")
@@ -71,7 +73,15 @@ const main = (data) => {
     .attr("y", 100)
     .attr("id", "title")
 
-  // on hover data box
+  // legend
+  svg.append('text')
+    .text('Doping is normal')
+    .attr("width", "100%")
+    .attr("x", 10)
+    .attr('y', height - circleSize)
+    .attr('id', 'legend')
+
+  // on hover tooltip 
   const tooltip = d3.select('body')
     .append('rect')
     .attr('class', 'tooltip')
@@ -83,43 +93,45 @@ const main = (data) => {
   // mouseover for points
   // it passes both event and data? don't know where that's defined.
   const mouseOver = (e, d) => {
-    tooltip.html(() => {
-      // creates a data entry from string given
-      const entry = (str) => {
-        const returnString =
-          '<span class="tooltip-label">' +
-          str + ': ' +
-          '</span>' +
-          '<span class="tooltip-data">' +
-          d[str] +
-          '</span>' +
-          '<br />'
-        return returnString
-      }
-      // these are the data entries that get entered,
-      // order matters
-      const showThese = [
-        'Name',
-        'Nationality',
-        'Time',
-        'Place',
-        'Year',
-        'Doping'
-      ]
-      // join with nothing, the <br /> in entry() ends entries
-      return showThese.map((string) => entry(string)).join('')
-    })
+    tooltip
+      .html(() => {
+        // creates a data entry from string given
+        const entry = (str) => {
+          const returnString =
+            '<span class="tooltip-label">' +
+            str + ': ' +
+            '</span>' +
+            '<span class="tooltip-data">' +
+            d[str] +
+            '</span>' +
+            '<br />'
+          return returnString
+        }
+        // these are the data entries that get entered,
+        // order matters
+        const showThese = [
+          'Name',
+          'Nationality',
+          'Time',
+          'Place',
+          'Year',
+          'Doping'
+        ]
+        // join with nothing, the <br /> in entry() ends entries
+        return showThese.map((string) => entry(string)).join('')
+      })
       // make box visible
       .style('display', 'inline')
       // change box location
       .style("left", `${e.layerX + 25}px`)
       .style("top", `${e.layerY + 25}px`)
-    // console.log(e)
+      .attr("data-year", d["Year"])
   }
   const mouseLeave = (e, d) => {
     tooltip
       .style('display', 'none')
   }
+
 
   // plot points
   const circles = svg.selectAll("circle")
@@ -130,15 +142,15 @@ const main = (data) => {
       return xSc(d["Year"])
     })
     .attr("cy", (d) => {
-      return ySc(new Date("0000-01-01T00:" + d["Time"]))
+      return ySc(new Date("1900-01-01T00:" + d["Time"]))
     })
     .attr('r', circleSize)
     .attr('class', "dot")
     .attr('data-xvalue', (d) => d.Year)
     .attr('data-yvalue', (d) => {
-      const date = new Date("1900-01-01T00:" + d["Time"])
-      console.log(date)
-      return date
+      let date = new Date("1900-01-01T00:" + d["Time"])
+      // for some reason this needs to be formatted
+      return date.toISOString()
     })
     .on('mouseover', mouseOver)
     .on('mouseleave', mouseLeave)
