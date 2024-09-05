@@ -22,27 +22,102 @@ const main = (eduData, mapData) => {
   console.log(eduData)
   console.log(mapData)
 
-  const nationData = topojson.feature(mapData, mapData.objects.nation)
-  const stateData = topojson.feature(mapData, mapData.objects.states)
-  const countyData = topojson.feature(mapData, mapData.objects.counties)
+  // fips in eduData matches with id
+  // in mapData/counties, make object with
+  // fips as keys
+  const eduObject = {};
+  eduData.map((d, _i) => {
+    eduObject[d.fips] = d
+  })
+
+  // make data into geojson
+  const nationData =
+    topojson.feature(mapData, mapData.objects.nation)
+  const stateData =
+    topojson.feature(mapData, mapData.objects.states)
+  const countyData =
+    topojson.feature(mapData, mapData.objects.counties)
 
   // let vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
   // let vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
 
   const width = 1000,
-    height = 400;
+    height = 600,
+    margin = 30;
+
+  // color scale
+  const colors = (value) => {
+    const colorFunction = value < 0.5
+      ? d3.interpolateLab("steelblue", "yellow")
+      : d3.interpolateLab("yellow", "brown")
+    return colorFunction(value)
+  }
+  const cSc = d3.scaleLinear()
+    .domain([
+      d3.max(eduData, (d) => {
+        return d.bachelorsOrHigher
+      }),
+      d3.min(eduData, (d) => {
+        return d.bachelorsOrHigher
+      })
+    ])
+    .range([0, 1])
 
   // svg container
   const svg = d3.select("body")
     .append("svg")
-    .attr("width", width)
-    .attr("height", height)
+    .attr("width", width + margin * 2)
+    .attr("height", height + margin * 2)
+    .attr("id", "svg-container")
+    // center
+    .style('display', 'block')
+    .style('margin', 'auto')
+
+  // background
+  svg.append("rect")
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .attr("fill", "khaki")
+    .attr("id", 'svg-background')
+
+  // title
+  svg.append('text')
+    .text('People with bachelors degree or higher')
+    .attr('x', 5)
+    .attr('y', 25)
     .attr("id", "title")
+
+  // description 
+  svg.append('text')
+    .text(`hello`)
+    .attr('x', 20)
+    .attr('y', height)
+    .attr("id", "description")
 
   // geoIdentity() projection just to get a projection going
   // so I can scale etc.
   const projection = d3.geoIdentity()
-    .fitSize([width, height], nationData)
+    .fitExtent(
+      [[margin, margin], [width + margin, height + margin]],
+      nationData
+    )
+
+  // on clicking the map
+  const onClick = (e, d) => {
+    const countyData = eduObject[d.id]
+
+    // get elements from where clicked
+    const elements = document.elementsFromPoint(e.clientX, e.clientY)
+    const countyE = elements.find((e, _i) => {
+      return e.classList.contains('county')
+    })
+    const stateE = elements.find((e, _i) => {
+      return e.classList.contains('state')
+    })
+
+    console.log('county: ', countyE)
+    console.log('state: ', stateE)
+  }
 
   // Draw the counties
   svg.selectAll()
@@ -52,9 +127,27 @@ const main = (eduData, mapData) => {
       .projection(projection)
     )
     .style("stroke", (d) => {
-      return "lightcoral"
+      return "Indigo"
     })
-    .style('fill', "white")
+    .style("stroke-width", "0.2")
+    .style('fill', (d) => {
+      const county = eduObject[d.id]
+      return colors(cSc(county.bachelorsOrHigher))
+    })
+    .on('click', onClick)
+    .attr('class', 'county')
+    .attr('data-fips', (d) => {
+      const county = eduObject[d.id]
+      return county.fips
+    })
+    .attr('data-education', (d) => {
+      const county = eduObject[d.id]
+      return county.bachelorsOrHigher
+    })
+    .attr('data-state', (d) => {
+      const county = eduObject[d.id]
+      return county.state
+    })
 
   // Draw the states
   svg.selectAll()
@@ -64,14 +157,20 @@ const main = (eduData, mapData) => {
       .projection(projection)
     )
     .style("stroke", (d) => {
-      return "grey"
+      return "DarkKhaki"
     })
+    .style("stroke-width", "0.7")
     .style('fill', "white")
     .style('fill-opacity', "0")
+    // .attr('pointer-events', 'none')
+    .attr('class', 'state')
 
   // Draw the map
   svg.append("path")
-    .datum({ type: "FeatureCollection", features: nationData.features })
+    .datum({
+      type: "FeatureCollection",
+      features: nationData.features
+    })
     .attr("d", d3.geoPath()
       .projection(projection)
     )
@@ -80,6 +179,8 @@ const main = (eduData, mapData) => {
     })
     .style('fill', "white")
     .style('fill-opacity', "0")
+    // .attr('pointer-events', 'none')
+    .on('click', onClick)
 }
 
 // fetches data from localstorage,
