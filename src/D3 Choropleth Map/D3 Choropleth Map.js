@@ -41,9 +41,18 @@ const main = (eduData, mapData) => {
   // let vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
   // let vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
 
+  // values
   const width = 1000,
     height = 600,
-    margin = 30;
+    margin = 30,
+    eduDataMax =
+      d3.max(eduData, (d) => {
+        return d.bachelorsOrHigher
+      }),
+    eduDataMin =
+      d3.min(eduData, (d) => {
+        return d.bachelorsOrHigher
+      })
 
   // color scale
   const colors = (value) => {
@@ -54,14 +63,11 @@ const main = (eduData, mapData) => {
   }
   const cSc = d3.scaleLinear()
     .domain([
-      d3.max(eduData, (d) => {
-        return d.bachelorsOrHigher
-      }),
-      d3.min(eduData, (d) => {
-        return d.bachelorsOrHigher
-      })
+      eduDataMax,
+      eduDataMin
     ])
     .range([0, 1])
+
 
   // svg container
   const svg = d3.select("body")
@@ -82,25 +88,77 @@ const main = (eduData, mapData) => {
 
   // title
   svg.append('text')
-    .text('People with bachelors degree or higher')
-    .attr('x', 5)
-    .attr('y', 25)
+    .text('Percentage of population with a bachelors degree or higher')
+    .attr('x', 100)
+    .attr('y', margin / 2 + 10)
     .attr("id", "title")
 
   // description 
   svg.append('text')
-    .text(`hello`)
+    .text(`I describe things`)
     .attr('x', 20)
-    .attr('y', height)
+    .attr('y', height + margin * 2 - 10)
     .attr("id", "description")
 
-  // geoIdentity() projection just to get a projection going
-  // so I can scale etc.
-  const projection = d3.geoIdentity()
-    .fitExtent(
-      [[margin, margin], [width + margin, height + margin]],
-      nationData
+  // legend
+  // legend values
+  const legendColors = [
+    colors(1),
+    colors(0.8),
+    colors(0.6),
+    colors(0.4),
+    colors(0.2),
+    colors(0),
+  ],
+    legendWidth = 200,
+    legendColorWidth = legendWidth / legendColors.length,
+    legendHeight = 20
+
+  // legend scale
+  const lSc = d3.scaleLinear()
+    .domain([
+      eduDataMax,
+      eduDataMin
+    ])
+    .range([
+      legendWidth - 1 - (legendColorWidth / 2),
+      legendColorWidth / 2
+    ])
+  const legend = svg.append('g')
+    .attr('id', 'legend')
+    .attr("transform",
+      `translate(${width - legendWidth - 20}, 
+        ${margin / 2})`)
+
+  // legend boxes
+  legend.selectAll('rect')
+    .data(legendColors)
+    .enter()
+    .append('rect')
+    .attr('width', legendColorWidth)
+    .attr('height', legendHeight)
+    .attr('x', (_d, i) => legendColorWidth * i)
+    .attr('y', 0)
+    .style('fill', (d) => {
+      return d
+    })
+    .attr("class", "legend-color-box")
+
+  // legend axis
+  const ticksAmount = legendColors.length - 1,
+    tickStep = (eduDataMax - eduDataMin) / (ticksAmount),
+    step = tickStep
+  legend.append("g")
+    .attr("transform", `translate(0,${-1})`)
+    .attr("width", `${legendColorWidth / legendColors.length - 20}`)
+    .attr("id", "legend-axis")
+    .style("color", 'white')
+    .call(d3.axisBottom(lSc)
+      .tickValues(
+        d3.range(eduDataMin, eduDataMax + step, step)
+      )
     )
+
 
   // on clicking the map
   const onClick = (e, d) => {
@@ -118,6 +176,42 @@ const main = (eduData, mapData) => {
     console.log('county: ', countyE)
     console.log('state: ', stateE)
   }
+
+  // For hovering tooltip
+  const mouseMove = (e) => {
+    // const countyData = eduObject[d.id]
+
+    // get elements from where clicked
+    const elements = document.elementsFromPoint(e.clientX, e.clientY)
+    const countyE = elements.find((e, _i) => {
+      return e.classList.contains('county')
+    })
+
+    if (countyE === undefined) {
+      return
+    }
+    // get data for county under mouse
+    const countyData = eduObject[countyE.attributes['data-fips'].value]
+
+    console.log()
+  }
+
+  const onHover = (_e, _d) => {
+    document.addEventListener('mousemove', mouseMove, false);
+  }
+  const onLeave = (_e, _d) => {
+    document.removeEventListener('mousemove', mouseMove, false);
+  }
+
+  // Draw Map
+  //
+  // geoIdentity() projection just to get a projection going
+  // so I can scale etc.
+  const projection = d3.geoIdentity()
+    .fitExtent(
+      [[margin, margin], [width + margin, height + margin]],
+      nationData
+    )
 
   // Draw the counties
   svg.selectAll()
@@ -181,6 +275,8 @@ const main = (eduData, mapData) => {
     .style('fill-opacity', "0")
     // .attr('pointer-events', 'none')
     .on('click', onClick)
+    .on('mouseover', onHover)
+    .on('mouseout', onLeave)
 }
 
 // fetches data from localstorage,
