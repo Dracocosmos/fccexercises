@@ -159,6 +159,18 @@ const main = (eduData, mapData) => {
       )
     )
 
+  // tooltip
+  const tooltip = d3.select('body')
+    .append('tooltip')
+    .attr('class', 'tooltip')
+    .attr('id', 'tooltip')
+    .style('background-color', 'rgba(239,239,239, 0.7)')
+    .style('position', 'absolute')
+    .style('display', 'none')
+    .style('padding', '3px')
+    .style('border-radius', '5px')
+    // make it not block mouse events
+    .style("pointer-events", "none")
 
   // on clicking the map
   const onClick = (e, d) => {
@@ -177,30 +189,80 @@ const main = (eduData, mapData) => {
     console.log('state: ', stateE)
   }
 
+  // For removing hovering tooltip highlight
+  let prevCounty = null
+  const removeHighlight = (element) => {
+    const color = element.attributes['data-color'].value
+    d3.select(element)
+      .style('stroke', 'indigo')
+      .style('fill', color)
+  }
+
   // For hovering tooltip
   const mouseMove = (e) => {
-    // const countyData = eduObject[d.id]
 
-    // get elements from where clicked
+    // get elements from where hovered
     const elements = document.elementsFromPoint(e.clientX, e.clientY)
     const countyE = elements.find((e, _i) => {
       return e.classList.contains('county')
     })
 
+    // return if no county found
     if (countyE === undefined) {
       return
     }
+
     // get data for county under mouse
     const countyData = eduObject[countyE.attributes['data-fips'].value]
 
-    console.log()
+    // modify tooltip text and location
+    tooltip
+      .style("left", `${e.layerX - 60}px`)
+      .style("top", `${e.layerY + 20}px`)
+      .html(`
+        <span>County: ${countyData.area_name}</span>
+        <br/>
+        <span>Percentage: ${countyData.bachelorsOrHigher}</span>
+      `)
+      .attr('data-education', countyE.attributes['data-education'].value)
+
+    // highlight current county
+    d3.select(countyE)
+      .style('stroke', 'white')
+      .style('fill', 'white')
+
+    // recolor previous county back
+    if (
+      prevCounty !== null
+      && prevCounty !== countyE
+    ) {
+      removeHighlight(prevCounty)
+    }
+
+    // save previous county
+    prevCounty = countyE
   }
 
   const onHover = (_e, _d) => {
     document.addEventListener('mousemove', mouseMove, false);
+
+    // show tooltip
+    tooltip
+      .style('display', 'inline')
   }
   const onLeave = (_e, _d) => {
     document.removeEventListener('mousemove', mouseMove, false);
+
+    // vanish tooltip
+    tooltip
+      .style('display', 'none')
+
+    // delete highlighting
+    if (
+      prevCounty !== null
+    ) {
+      removeHighlight(prevCounty)
+    }
   }
 
   // Draw Map
@@ -226,7 +288,9 @@ const main = (eduData, mapData) => {
     .style("stroke-width", "0.2")
     .style('fill', (d) => {
       const county = eduObject[d.id]
-      return colors(cSc(county.bachelorsOrHigher))
+      const color = colors(cSc(county.bachelorsOrHigher))
+      county['data-color'] = color
+      return color
     })
     .on('click', onClick)
     .attr('class', 'county')
@@ -242,6 +306,12 @@ const main = (eduData, mapData) => {
       const county = eduObject[d.id]
       return county.state
     })
+    .attr('data-color', (d) => {
+      const county = eduObject[d.id]
+      return county['data-color']
+    })
+    .on('mouseover', onHover)
+    .on('mouseout', onLeave)
 
   // Draw the states
   svg.selectAll()
@@ -258,6 +328,7 @@ const main = (eduData, mapData) => {
     .style('fill-opacity', "0")
     // .attr('pointer-events', 'none')
     .attr('class', 'state')
+    .style("pointer-events", "none")
 
   // Draw the map
   svg.append("path")
@@ -274,9 +345,9 @@ const main = (eduData, mapData) => {
     .style('fill', "white")
     .style('fill-opacity', "0")
     // .attr('pointer-events', 'none')
-    .on('click', onClick)
     .on('mouseover', onHover)
     .on('mouseout', onLeave)
+    .style("pointer-events", "none")
 }
 
 // fetches data from localstorage,
