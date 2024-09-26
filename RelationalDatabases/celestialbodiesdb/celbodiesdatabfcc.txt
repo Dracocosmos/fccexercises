@@ -1,0 +1,69 @@
+CREATE TABLE galaxy(
+galaxy_id SERIAL NOT NULL PRIMARY KEY,
+name varchar(30) UNIQUE NOT NULL, 
+black_holes INT,
+shape varchar(30),
+distance NUMERIC(1000)
+);
+
+CREATE TABLE star(
+star_id SERIAL NOT NULL PRIMARY KEY,
+name varchar(30) UNIQUE NOT NULL,
+galaxy_id INT NOT NULL,
+FOREIGN KEY (galaxy_id) REFERENCES galaxy(galaxy_id),
+color varchar(30),
+distance INT,
+examined BOOLEAN
+);
+
+CREATE TABLE planet(
+planet_id SERIAL NOT NULL PRIMARY KEY,
+name varchar(30) UNIQUE NOT NULL,
+star_id INT NOT NULL,
+FOREIGN KEY (star_id) REFERENCES star(star_id),
+aliens BOOLEAN,
+habitability TEXT
+);
+
+CREATE TABLE moon(
+moon_id SERIAL NOT NULL PRIMARY KEY,
+name varchar(30) UNIQUE NOT NULL,
+planet_id INT NOT NULL,
+FOREIGN KEY (planet_id) REFERENCES planet(planet_id),
+aliens BOOLEAN,
+habitability TEXT
+);
+
+CREATE TABLE alien(
+alien_id SERIAL NOT NULL PRIMARY KEY,
+name varchar(30) UNIQUE NOT NULL,
+planet_id INT NOT NULL,
+moon_id INT NOT NULL,
+FOREIGN KEY (planet_id) REFERENCES planet(planet_id),
+FOREIGN KEY (moon_id) REFERENCES moon(moon_id),
+description TEXT
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
