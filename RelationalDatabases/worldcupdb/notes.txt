@@ -1,0 +1,14 @@
+DO
+$do$
+BEGIN
+  IF NOT EXISTS (SELECT 2 FROM teams WHERE name = 'xd') THEN
+    INSERT INTO teams (name) VALUES ('xd');
+  END IF;
+END
+$do$;
+
+SELECT
+  CASE
+    WHEN NOT EXISTS (SELECT 1 FROM teams WHERE name = 'xd')
+      THEN INSERT INTO teams (name) VALUES ('xd');
+  END CASE
