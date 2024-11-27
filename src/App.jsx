@@ -1,5 +1,5 @@
 import React from "react";
-import store from "./store";
+import exerciseStore from "./exerciseStore";
 
 // TODO: Make a react object that has a list of all the excercises, with links that 
 // refreshes the page to that exercise.
@@ -9,9 +9,9 @@ const switchActive = { type: 'exercises/activate', payload: null }
 
 const App = () => {
   // get info from store
-  const exercises = store.getState().exercises
+  const exercises = exerciseStore.getState().exercises
 
-  console.log(exercises.active);
+  console.log("currently active exercise:", exercises.active);
 
   // load the active exercise
   if (exercises.active) {
@@ -26,7 +26,7 @@ const App = () => {
         // dispatch action to set page to exercise
         return (<li className="menu_link" key={id}>
           <a href={`${text}/${text}.html`} onClick={() => {
-            store.dispatch(
+            exerciseStore.dispatch(
               { type: 'exercises/activate', payload: text })
           }}>
             {text}
