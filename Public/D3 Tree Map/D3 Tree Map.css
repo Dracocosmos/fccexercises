@@ -13,11 +13,14 @@
 /* choose graph buttons */
 #button-wrapper{
   display: flex;
-  justify-content: space-around;
   margin: auto;
 
   height: 10vh;
   background-color: black;
+}
+
+.data-change-button {
+  flex: 1;
 }
 
 /* main graph */

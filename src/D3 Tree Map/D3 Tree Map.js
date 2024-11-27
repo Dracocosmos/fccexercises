@@ -26,13 +26,39 @@ const drawSvg = (data) => {
   const dataEntries = data.children
   console.log(data)
 
+  // Specify the color scale.
+  // const color = d3.scaleOrdinal(data.children.map(d => d.id.split("/").at(-1)), d3.schemeTableau10);
+
+  // Compute the layout.
+  const root = d3.treemap()
+    .tile(d3.treemapSquarify) // e.g., d3.treemapSquarify
+    .size([width, height])
+    .padding(1)
+    .round(true)
+    (d3.hierarchy(data)
+      .sum(d => {
+        return d.value
+      })
+      .sort((a, b) => {
+        return b.value - a.value
+      })
+    );
 
   // svg container
   const svg = d3.select("#root")
     .append("svg")
+    .attr("viewBox", [0, 0, width, height])
     .attr("width", width + margin * 2)
     .attr("height", height + margin * 2)
     .attr("id", "svg-container")
+
+  // Add a cell for each leaf of the hierarchy, with a link to the corresponding GitHub page.
+  const leaf = svg.selectAll("g")
+    .data(root.leaves())
+    .join("a")
+    // .attr("transform", d => `translate(${d.x0},${d.y0})`)
+    // .attr("href", d => `https://github.com/prefuse/Flare/blob/master/flare/src${d.data.id}.as`)
+    .attr("target", "_blank");
 
   // background
   svg.append("rect")
@@ -80,9 +106,10 @@ const main = (kickstarterData, movieData, gameData) => {
   const buttonClick = (e) => {
     e.preventDefault()
 
-    // TODO: clear svg
+    // clear previous svg
+    $('#svg-container').remove()
 
-    //create new svg
+    // create new svg
     drawSvg(e.data)
   }
 
@@ -90,6 +117,7 @@ const main = (kickstarterData, movieData, gameData) => {
   [kickstarterData, movieData, gameData].forEach((data) => {
     buttonDiv.append($(document.createElement('button'))
       .attr('id', data['button-name'].toLowerCase() + '-button')
+      .attr('class', 'data-change-button')
       .text(data['button-name'])
       .on('click', data, buttonClick)
     )
