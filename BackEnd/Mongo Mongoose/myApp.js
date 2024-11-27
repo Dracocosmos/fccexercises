@@ -114,18 +114,22 @@ const queryChain = (done) => {
   const foodToSearch = "burrito";
   Person
     .find(
-
-  )
+      { favoriteFoods: foodToSearch }
+    )
     .sort(
-  )
+      { name: 'asc' }
+    )
     .limit(
-  )
+      2
+    )
     .select(
-  )
-    .exec()
-
-
-  done(null /*, data*/);
+      '-age'
+    )
+    .exec(function(err, data) {
+      console.log(err, data)
+      if (err) return console.error(err);
+      done(null, data);
+    })
 };
 
 /** **Well Done !!**
