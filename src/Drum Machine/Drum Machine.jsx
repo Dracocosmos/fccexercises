@@ -4,7 +4,7 @@ import React from "react";
 import { createStore } from "redux";
 import { Provider, connect } from "react-redux";
 
-import $, { post, type } from "jquery";
+import $ from "jquery";
 
 // for hot loading css
 import "../../Public/Drum Machine/Drum Machine.css"
@@ -118,8 +118,8 @@ const audioReducer = (state = storeInitial, action) => {
 
 const store = createStore(audioReducer);
 
-// all the drum buttons,
-class DrumButtons extends React.Component {
+// all the drum pads,
+class DrumPads extends React.Component {
   constructor(props) {
     super(props);
 
@@ -132,22 +132,51 @@ class DrumButtons extends React.Component {
     // remember to bind this if you make any methods inside object
     this.playSound = this.playSound.bind(this);
     this.keyDown = this.keyDown.bind(this);
-
+    this.keyUp = this.keyUp.bind(this);
   }
 
   keyDown(event) {
     this.state.samples.forEach((sample) => {
       if (event.key.toLowerCase() == sample.key.toLowerCase()) {
-        this.playSound(event, sample)
+        this.playSound(event, sample);
+
+        // currently pressed button
+        const buttonElement = document
+          .getElementById(`${sample.name}-pad`).parentElement;
+
+        // style it when pressed:
+        const classList = buttonElement.classList
+
+        if (!classList.contains("active")) {
+          buttonElement.classList.add("active");
+        };
       };
     });
   };
+
+  keyUp(event) {
+    this.state.samples.forEach((sample) => {
+      if (event.key.toLowerCase() == sample.key.toLowerCase()) {
+
+        // currently pressed button
+        const buttonElement = document
+          .getElementById(`${sample.name}-pad`).parentElement;
+
+        // unstyle it after unpressed
+        const classList = buttonElement.classList
+
+        if (classList.contains("active")) {
+          buttonElement.className = "single-pad-wrapper";
+        };
+      };
+    });
+  }
 
   async playSound(event, sample) {
     event.preventDefault();
     // the tests wont pass if you don't play audio from the 
     // exact element, but it will not play new audio quickly enough from 
-    // the same button
+    // the same pad 
     try {
       // needed for passing tests
       const passTest = async () => {
@@ -205,10 +234,12 @@ class DrumButtons extends React.Component {
 
   componentDidMount() {
     document.addEventListener("keydown", this.keyDown);
+    document.addEventListener("keyup", this.keyUp);
   };
 
   componentWillUnmount() {
     document.removeEventListener("keydown", this.keyDown);
+    document.removeEventListener("keyup", this.keyUp);
   }
 
   render() {
@@ -218,12 +249,12 @@ class DrumButtons extends React.Component {
         {this.state.samples.map((sample, _index) => {
           return (
             <div
-              className="button-wrapper"
+              className="single-pad-wrapper"
               key={`${sample.reactKey}-fragment`}
             >
               <button
-                id={`${sample.name}-button`}
-                key={`${sample.reactKey}-button`}
+                id={`${sample.name}-pad`}
+                key={`${sample.reactKey}-pad`}
                 // when clicked, send the sample object to playsound
                 onClick={(event) => this.playSound(event, sample)}
                 className="drum-pad"
@@ -241,7 +272,7 @@ class DrumButtons extends React.Component {
               <div
                 id={`${sample.name}-div`}
                 key={`${sample.reactKey}-div`}
-                className="under-button"
+                className="under-pad"
               >
                 {sample.name}
               </div>
@@ -278,12 +309,12 @@ const mapDisplayStateToProps = (state, _ownprops) => {
 };
 DrumDisplay = connect(mapDisplayStateToProps)(DrumDisplay);
 
-const mapButtonStateToProps = (state, _ownprops) => {
-  return { samples: state.samples }
-};
-DrumButtons = connect(mapButtonStateToProps)(DrumButtons);
+// const mapButtonStateToProps = (state, _ownprops) => {
+//   return { samples: state.samples }
+// };
+// DrumButtons = connect(mapButtonStateToProps)(DrumButtons);
 
-// wrapper div for buttons
+// wrapper div for everything
 class DrumMachine extends React.Component {
   constructor(props) {
     super(props);
@@ -292,7 +323,9 @@ class DrumMachine extends React.Component {
   render() {
     return (
       <div id="drum-machine">
-        <DrumButtons></DrumButtons>
+        <div id="pads-wrap">
+          <DrumPads></DrumPads>
+        </div>
         <DrumDisplay></DrumDisplay>
       </div>
     )
