@@ -6,14 +6,23 @@
 
   --background-color: #002118;
   --box-color: #88a17f;
+  --font-color: white;
+  --highlight-color: #bdfffb;
+  --button-color: green;
 
   background-color: var(--background-color);
+
+  font-family: "Quicksand", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
 }
 
 /* main box */
 #quote-box {
-  /* center */
+  /* top margin */
   margin: min(40px, max(5px, 1vw)) auto 0 auto;
+  /* center */
   width: min(700px, max(300px, 60vw));
 
   /* background */
@@ -21,37 +30,68 @@
   border-radius : 5px;
 }
 
-/* tweet icon */
-.fa-icon {
+
+/* quote itself */
+#text {
   width: 100%;
   text-align: center;
+
+  padding-top: 10px;
+}
+
+#author {
   position: relative;
+  left: 70%;
+  transform: translateY(-10px);
 
-  /* size of bird */
-  font-size: 1.5rem;
+}
 
-  /* center the icon */
-  top: 50%;
-  transform: translateY(-50%);
+#button-div {
+  display: flex;
+  flex-direction: row;
 }
 
 /* Buttons */
 .button-style {
-  background-color: green;
+  color: var(--font-color);
+  background-color: var(--button-color);
 
-  border: 2px solid black;
+  margin: 5px 0 5px 10px;
   border-radius: 4px;
   outline: 0;
 
   width: 100px;
   min-height: 40px;
+  /* needed for relative to work in fa-icon */
+  height: 0;
 
   cursor: pointer;
 
   /* reset button styling */
-  /* border: none; */
-  margin: 0;
+  border: none;
+  /* margin: 0; */
   padding: 0;
   font: inherit;
   box-sizing: border-box;
+}
+
+.button-style:hover {
+  background-color: var(--highlight-color);
+  color: var(--background-color);
+}
+
+/* tweet icon */
+.fa-icon {
+  color: var(--font-color);
+
+  display:inline-block;
+  width:100%;
+  height:100%;
+
+  border-radius: 4px;
+}
+
+.fa-icon:hover {
+  background-color: var(--highlight-color);
+  color: var(--background-color);
 }
