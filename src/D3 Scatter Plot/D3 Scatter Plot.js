@@ -32,16 +32,17 @@ const main = (data) => {
   // scale horizontal
   const xSc = d3.scaleUtc()
     .domain([d3.min(data, (d) => {
-      return d[0]
+      return d["Year"]
     }), d3.max(data, (d) => {
-      return d[0]
+      return d["Year"]
     })])
     .range([scalePadding, width - scalePadding]);
 
   // scale vertical
   const ySc = d3.scaleLinear()
     .domain([0, d3.max(data, (d) => {
-      return d[1]
+      console.log(new Date(`0000-01-01T00:` + d["Time"]))
+      return d["Time"]
     })])
     .range([height - scalePadding, topPadding]);
 
@@ -57,18 +58,26 @@ const main = (data) => {
     .attr("height", "100%")
     .attr("fill", "lightgrey");
 
+  // title text
+  svg.append("text")
+    .text("scatter!")
+    .attr("x", 100)
+    .attr("y", 100)
+    .attr("id", "title")
+
   // plot points
   svg.selectAll("circle")
     .data(data)
     .enter()
     .append("circle")
     .attr("cx", (d) => {
-      return xSc(d[0])
+      return xSc(d["Year"])
     })
     .attr("cy", (d) => {
-      return ySc(d[1])
+      return ySc(d["Time"])
     })
     .attr('r', 10)
+    .attr('class', "dot")
     .style('fill', 'green');
 }
 
