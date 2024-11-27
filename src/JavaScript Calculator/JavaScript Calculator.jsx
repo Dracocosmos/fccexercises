@@ -38,12 +38,87 @@ const storeInitial = {
   },
 };
 
+class formulaBlock {
+  constructor(type, value) {
+    this.type = type;
+    this.value = value;
+    this.validNumber = false;
+
+    if (this.type === "decimal point") {
+      this.type = "number"
+      this.value = "0."
+    };
+  }
+
+  checkIfValidNumber() {
+    const invalid = ["", "0", "-0"]
+
+    const isValid = (invValue) => {
+      return this.value === invValue;
+    };
+
+    if (invalid.some(isValid)) {
+      this.validNumber = false;
+    } else {
+      this.validNumber = true;
+    };
+  }
+
+  backspaceValue() {
+    this.value = this.value.slice(0, -1);
+    this.checkIfValidNumber();
+  }
+
+  updateValue(value) {
+    switch (this.type) {
+      case "operator":
+        this.value = value;
+        break;
+      case "number":
+        switch (value) {
+          // if updating with decimal point
+          case ".":
+            if (!this.value.includes(".")) {
+              this.value = this.value + value;
+            };
+            break;
+          // if turning number negative
+          case "-":
+            if (this.value.length === 0) {
+              this.value = value;
+            };
+            break;
+
+          // if updating with 0
+          case "0":
+            // if first zero
+            if (this.value !== "0"
+              && this.value !== "-0") {
+              this.value = this.value + value;
+            };
+            break;
+
+          // if updating with number
+          default:
+            this.value = this.value + value;
+            break;
+        };
+
+        this.checkIfValidNumber();
+        break;
+      default:
+        break;
+    };
+
+  }
+};
+
 const calculatorReducer = (state = storeInitial, action) => {
   switch (action.type) {
     case 'currentFormula/update':
       // all possible buttons
       const buttons = state.acceptableButtons;
-      // a button object
+      // a button object for pressed button
       let currentButton = buttons[action.payload];
 
       // if action is an alias
@@ -52,84 +127,22 @@ const calculatorReducer = (state = storeInitial, action) => {
         currentButton = buttons[currentButton.aliasFor];
       };
 
-      // formula as it is, in an array of blocks
-      const formula = state.currentFormula;
-      let formulaCurrentBlock = formula.length !== 0 ?
-        formula[formula.length - 1]
-        : null;
+      const currentBlock = new formulaBlock(currentButton.type, action.payload);
 
-      // the last char in the formula
-      const lastInput = formulaCurrentBlock ?
-        formulaCurrentBlock.slice(-1)
-        : null;
-      // a button object
-      const lastInputObject = lastInput ?
-        buttons[lastInput.at(-1)]
-        : null;
+      console.log(currentBlock)
 
-      // TODO: still deletes whole block if last char is . when pressing an operator
-      switch (currentButton.type) {
-        // if action is an operator
-        case "operator":
-          // is a repeat operator
-          if (lastInput
-            && (lastInputObject.type === "operator"
-              || lastInputObject.type === "decimal point")
-          ) {
-            formula[formula.length - 1] = action.payload;
-          } else {
-            formula.push(action.payload);
-          };
-          break;
-
-        // if action is a number
-        case "number":
-          // is a repeat number
-          if (lastInput
-            && (lastInputObject.type === "number"
-              || lastInputObject.type === "decimal point")
-          ) {
-            formula[formula.length - 1] = formulaCurrentBlock + action.payload;
-          } else {
-            formula.push(action.payload);
-          };
-          break;
-
-        case "decimal point":
-          // is not a repeat point
-          if (lastInput
-            && !formulaCurrentBlock.includes(".")
-          ) {
-            // previous is an operator
-            if (lastInputObject.type !== "operator") {
-              formula[formula.length - 1] = formulaCurrentBlock + action.payload;
-            };
-          };
-          break;
-
-        case "backspace":
-          if (lastInput) {
-            formula[formula.length - 1] = formula[formula.length - 1].slice(0, -1);
-            // if empty
-            if (formula[formula.length - 1].length === 0) {
-              formula.pop();
-            };
-          };
-          break;
-
-        default:
-          break;
-      }
-
-      console.log(formula)
+      // console.log(formula)
       return {
         ...state,
-        currentFormula: formula
+        // currentFormula: formula
       };
     case 'formula/calculate':
       //TODO: make string valid, even if it has operator at end, 00 at start etc
       const formulaString = state.currentFormula.join("");
-      console.log(eval(formulaString))
+
+      // format string for eval
+      let firstEntry = state.acceptableButtons[formulaString[0]];
+      let lastEntry = state.acceptableButtons[formulaString[-1]];
       return {
         ...state,
         currentTotal: eval(formulaString)
