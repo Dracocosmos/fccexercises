@@ -38,7 +38,7 @@ if paths_found:
 
     filename = input("Please enter new exercise name: ")
 
-    # make new exercise files
+    # make new exercise files)
     for path_name, path in paths(filename).items():
         # copy from template to new folder
         try: 
@@ -57,20 +57,41 @@ if paths_found:
             print("coulnd't rename new files ", e)
             sys.exit(3)
 
+        # edit new files to have correct links
+        try:
+            for file in os.scandir(path):
+                with open(file.path, "r+") as file:
+                    content = file.read()
+                    # delete old content
+                    file.truncate(0)
+                    file.seek(0)
+                    content = content.replace(template_string, filename)
+                    file.write(content)
+        except Exception as e:
+            print("couldn't edit new files ", e)
+            sys.exit(4)
+
     # update exercise list
     try:
+        # make backup
         with open("./src/exercises_list.json", "r") as file:
-            # make backup
-            open("exercises_list_backup.json", "w").write(file.)
+            open("./src/exercises_list_backup.json", "w").write(file.read())
+
+        # make a new json file
+        with open("./src/exercises_list.json", "r") as file:
+            # parse json
             file_json = json.load(file)
+
+            # add new file to list
             file_json["list"].append(filename)
-            print(file_json)
             new_list = list(set(file_json["list"]))
             file_json["list"] = new_list
-            open("test.json", "w").write(json.dumps(file_json))
+
+            # write new json file
+            open("./src/exercises_list.json", "w").write(json.dumps(file_json))
     except Exception as e:
         print("error with .json file ", e)
-        sys.exit(4)
+        sys.exit(5)
 
 # if file has not been found:
 else:

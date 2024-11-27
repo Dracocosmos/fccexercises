@@ -5,7 +5,7 @@ import { Provider } from "react-redux";
 import $ from "jquery";
 
 // for hot loading css
-import "../../Public/Random Quote Machine/Random Quote Machine.css"
+import "../../Public/exercise template/exercise template.css"
 // for resetting to the exercise menu
 import Reset from "../Reset";
 
