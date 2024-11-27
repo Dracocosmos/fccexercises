@@ -78,10 +78,73 @@ ALTER TABLE properties
 UPDATE elements
   SET symbol = INITCAP(symbol);
 
-
 -- remove trailing zeroes in properties.atomic_mass
 ALTER TABLE properties 
-  ALTER COLUMN atomic_mass TYPE DECIMAL(999, 4);
--- TODO:
+  ALTER COLUMN atomic_mass TYPE DECIMAL;
+
 UPDATE properties 
-  SET weight = TRIM_SCALE(weight) 
+  SET atomic_mass = TRIM(trailing '0' FROM atomic_mass::TEXT)::DECIMAL;
+
+-- add missing entries
+INSERT INTO (properties 
+      JOIN elements USING(atomic_number)
+      )
+(
+  type_id,
+  atomic_number,
+  atomic_mass,
+  melting_point_celsius,
+  boiling_point_celsius,
+  symbol,
+  name
+) VALUES 
+( 
+  3,
+  9,
+  18.998,
+  -220,
+  -188.1,
+  'F',
+  'Fluorine'
+),
+(
+  3,
+  10,
+  20.18,
+  -248.6,
+  -246.1,
+  'Ne',
+  'Neon'
+);
+
+WITH data(
+  type_id,
+  atomic_number,
+  atomic_mass,
+  melting_point_celsius,
+  boiling_point_celsius,
+  symbol,
+  name
+) AS (
+  VALUES
+  (
+( 
+  3,
+  9,
+  18.998,
+  -220,
+  -188.1,
+  'F',
+  'Fluorine'
+),
+(
+  3,
+  10,
+  20.18,
+  -248.6,
+  -246.1,
+  'Ne',
+  'Neon'
+);
+  )
+)
