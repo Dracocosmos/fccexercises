@@ -18,7 +18,7 @@ RN=$((1 + $RN % 1000))
 # RN=1
 
 # get username, 22 char max
-echo -e "\nEnter your username:"
+echo -e "Enter your username:"
 read USERN
 
 # check db for name
@@ -28,18 +28,18 @@ USERD=$($PSQL "SELECT uid, username, games_total, best_game FROM users WHERE use
 if [[ -z $USERD ]]
 then
   # add user to db
-  $PSQL "INSERT INTO users (username) VALUES ('$USERN')"
+  $PSQL "INSERT INTO users (username) VALUES ('$USERN')" >/dev/null
   USERD=$($PSQL "SELECT uid, username, games_total, best_game FROM users WHERE username='$USERN'")
   
   IFS="|" read U_ID USERN GAMEST BGAME <<< $USERD
 
-  echo -e "\nWelcome, $USERN! It looks like this is your first time here."
+  echo "Welcome, $USERN! It looks like this is your first time here."
 
 # if username in db:
 else
   IFS="|" read U_ID USERN GAMEST BGAME <<< $USERD
 
-  echo -e "\nWelcome back, $USERN! You have played $GAMEST games, and your best game took $BGAME guesses."
+  echo "Welcome back, $USERN! You have played $GAMEST games, and your best game took $BGAME guesses."
 fi
 
 # validation function
@@ -56,7 +56,7 @@ validate_guess () {
 }
 
 # get initial user guess
-echo -e "Guess the secret number between 1 and 1000:"
+echo -e "\nGuess the secret number between 1 and 1000:"
 read GUESS
 
 # main game loop
@@ -69,21 +69,21 @@ do
   # if not a valid number
   if ! $(validate_guess $GUESS)
   then
-    echo -e "That is not an integer, guess again:"
+    echo -e "\nThat is not an integer, guess again:"
     read GUESS
     continue
 
   # guess too high
   elif [[ $GUESS -gt $RN ]]
   then
-    echo -e "It's lower than that, guess again:"
+    echo -e "\nIt's lower than that, guess again:"
     read GUESS
     continue
 
   # guess too low
   elif [[ $GUESS -lt $RN ]]
   then
-    echo -e "It's higher than that, guess again:"
+    echo -e "\nIt's higher than that, guess again:"
     read GUESS
     continue
   fi
@@ -91,22 +91,19 @@ do
 done
 
 # guess correct:
-echo -e "You guessed it in $LOOPCOUNT tries. The secret number was $RN. Nice job!"
+echo "You guessed it in $LOOPCOUNT tries. The secret number was $RN. Nice job!"
 
 # save to games_total
 ((GAMEST++))
-$PSQL "UPDATE users SET games_total=$GAMEST WHERE uid=$U_ID"
+$PSQL "UPDATE users SET games_total=$GAMEST WHERE uid=$U_ID" >/dev/null
 
-# save best game if it is
-# get previous best game
-# OLDBGAME=$($PSQL "SELECT best_game FROM users WHERE uid=$U_ID")
-# if no best_game
+# if no best_game, save
 if [[ -z $BGAME ]]
 then
-  $PSQL "UPDATE users SET best_game=$LOOPCOUNT WHERE uid=$U_ID"
+  $PSQL "UPDATE users SET best_game=$LOOPCOUNT WHERE uid=$U_ID" >/dev/null
 
-# or old best game is worse
+# or old best_game is worse, save
 elif [[ $LOOPCOUNT -lt $BGAME ]]
 then
-  $PSQL "UPDATE users SET best_game=$LOOPCOUNT WHERE uid=$U_ID"
+  $PSQL "UPDATE users SET best_game=$LOOPCOUNT WHERE uid=$U_ID" >/dev/null
 fi
