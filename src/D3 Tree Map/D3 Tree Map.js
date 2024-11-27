@@ -16,25 +16,42 @@ import $ from "jquery";
 
 import * as d3 from "d3"
 
+
 // values
 const width = 1000,
   height = 600,
   margin = 30,
-  fullWidth = width + margin * 2
+  fullWidth = width + margin * 2,
+  bottomLegendSpace = 100
 
 const drawSvg = (data) => {
-  const dataEntries = data.children
+
+  // unique ids for clip path,
+  // identifier must be letters only
+  let uids = {}
+  const getUid = (identifier) => {
+    uids[identifier]
+      ? ++uids[identifier]
+      : uids[identifier] = 1
+    return identifier + '-' + uids[identifier]
+  }
+
   console.log(data)
 
   // Specify the color scale.
-  // const color = d3.scaleOrdinal(data.children.map(d => d.id.split("/").at(-1)), d3.schemeTableau10);
+  const color = d3.scaleOrdinal(
+    data.children.map(d => {
+      return d.name
+    }),
+    d3.schemeSet3
+  );
 
   // svg container
   const svg = d3.select("#root")
     .append("svg")
     // .attr("viewBox", [0, 0, width, height])
     .attr("width", width + margin * 2)
-    .attr("height", height + margin * 2)
+    .attr("height", height + margin * 2 + bottomLegendSpace)
     .attr("id", "svg-container")
 
   // background
@@ -58,11 +75,12 @@ const drawSvg = (data) => {
     .attr('y', height + margin * 2 - 10)
     .attr("id", "description")
 
-  // legend
+  // TODO: legend
+  svg.append('g')
 
   // Compute the layout.
   const root = d3.treemap()
-    .tile(d3.treemapSquarify) // e.g., d3.treemapSquarify
+    .tile(d3.treemapSquarify) // any treemapping function here
     .size([width, height])
     // .size(d => console.log(d))
     .padding(2)
@@ -87,14 +105,12 @@ const drawSvg = (data) => {
   // Append a color rectangle. 
   leaf.append("rect")
     .attr("id", d => {
-      // (d.leafUid = document.uid("leaf")).id
-      return d.data.category + '-' + d.data.name + '-rect'
+      const id = getUid('leaf')
+      d.leafUid = id
+      return id
     })
-    .attr("fill", _d => {
-      // while (d.depth > 1) 
-      //   d = d.parent; 
-      // return color(d.data.name); 
-      return 'blue';
+    .attr("fill", d => {
+      return color(d.parent.data.name)
     })
     .attr("fill-opacity", 0.6)
     .attr("width", d => d.x1 - d.x0)
@@ -104,19 +120,19 @@ const drawSvg = (data) => {
   leaf.append("clipPath")
     // .attr("id", d => (d.clipUid = d3.DOM.uid("clip")).id)
     .attr("id", d => {
-      console.log(d)
-      const uid = d.data.name + '-' + d.data.category
+      const uid = getUid('clip')
       d.clipUid = uid
       return uid
     })
     .append("use")
-  // .attr("xlink:href", d => d.leafUid.href);
+    .attr("href", d => {
+      // return 'circle(30px at 35px 35px)';
+      return '#' + d.leafUid
+    });
 
   leaf.append("text")
-    // TODO: clips not working
     .attr("clip-path", d => {
-      console.log(d)
-      return '#' + d.clipUid
+      return 'url(#' + d.clipUid + ')'
     })
     .selectAll("tspan")
     // .data(d => {
@@ -124,12 +140,13 @@ const drawSvg = (data) => {
     // })
     .data(d => d.data.name.split(/(?=[A-Z][a-z])|\s+/g).concat(d.value))
     .join("tspan")
-    .attr('font-size', (d, i, nodes) => {
+    .attr('font-size', (_d, _i, _nodes) => {
       return '80%'
     })
     .attr("x", 3)
     .attr("y", (_d, i, _nodes) => {
       return i + 1 + 'em'
+      // original copied formula:
       // return `${(i === nodes.length - 1) * 0.3 + 1.1 + i * 0.9}em`
     })
     .attr("fill-opacity", (_d, i, nodes) => i === nodes.length - 1 ? 0.7 : null)
