@@ -1,6 +1,20 @@
 /* can't use * as selector on codepen */
 
 :root {
+  --background-color: #daff91;
+  --app-background-color: #014737;
+
+  --button-active-color: #ffebba;
+  --button-inactive-color: #fce879;
+
+  --inner-border-color: #eeff00;
+  --border-active-color: #ffffff;
+
+  --font-color: #453f0e;
+  --font-active-color: #ffffff;
+
+  --inner-border: 3px solid var(--inner-border-color);
+  --inner-border-active: 3px solid var(--border-active-color);
 }
 
 * {
@@ -11,4 +25,8 @@
 }
 
 body {
+}
+
+#clock-wrapper {
+  margin: 20px 600px;
 }

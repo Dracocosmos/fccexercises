@@ -13,13 +13,81 @@ import "../../Public/25 + 5 Clock/25 + 5 Clock.css"
 // for resetting to the exercise menu
 import Reset from "../Reset";
 
+const storeInitial = {
+  breakTime: 5,
+  // breakTime: 0.05,
+  sessionTime: 25,
+  // sessionTime: 0.05,
+  active: false,
+  currentClockDisplay: "00:00",
+  currentBlockDisplay: "session",
+};
+
+const clockReducer = (state = storeInitial, action) => {
+
+  // for setting break and session times
+  function newNumber(oldNumber, payload) {
+    // if payload number, return it as is
+    if (typeof payload === "number") {
+      return payload
+    }
+
+    function validNumber(number, maxVal = 60) {
+      return (number <= maxVal)
+        && (number > 0)
+    };
+
+    let newNumber = payload === "+"
+      ? oldNumber + 1
+      : oldNumber - 1
+
+    newNumber = validNumber(newNumber)
+      ? newNumber
+      : oldNumber
+
+    return newNumber
+  };
+
+  switch (action.type) {
+    case 'breaktime/update':
+      return {
+        ...state,
+        breakTime: newNumber(state.breakTime, action.payload)
+      };
+    case 'sessiontime/update':
+      return {
+        ...state,
+        sessionTime: newNumber(state.sessionTime, action.payload)
+      };
+    case 'clockstate/update':
+      return {
+        ...state,
+        active: action.payload
+      };
+    case 'timerDisplay/update':
+      return {
+        ...state,
+        currentClockDisplay: action.payload
+      };
+    case 'blockDisplay/update':
+      return {
+        ...state,
+        currentBlockDisplay: action.payload
+      };
+    default:
+      return state;
+  };
+};
+
+const store = createStore(clockReducer);
+
 class clock {
-  constructor(breakTime, sessionTime) {
-    this._clockSetup(breakTime, sessionTime)
+  constructor(breakTime, sessionTime, startFrom = null) {
+    this._clockSetup(breakTime, sessionTime, startFrom)
   }
 
   // for both reset and constructor
-  _clockSetup(breakTime, sessionTime) {
+  _clockSetup(breakTime, sessionTime, startFrom = null) {
     this.loopActive = false
 
     // in ms until otherways said
@@ -29,7 +97,7 @@ class clock {
     this.breakTimeMinutes = breakTime
 
     // gives out ms values, first for session, then break, to infinity
-    this.nextBlockGenerator = this._timeGenerator(this.breakTime, this.sessionTime)
+    this.nextBlockGenerator = this._timeGenerator(this.breakTime, this.sessionTime, startFrom)
     this.currentBlockTimeLeft = this.nextBlockGenerator.next().value
 
     // how much time left in the currently running block
@@ -37,16 +105,40 @@ class clock {
     this.timeLeftSeconds = this.currentBlockTimeLeft / 60
 
     // starting value for display
-    this._updateDisplayString(this.sessionTimeMinutes)
+    // check which block underway
+    let displayM = this.currentBlockName === "Session"
+      ? this.sessionTimeMinutes
+      : this.breakTimeMinutes
+    // check if time is under one minute
+    const displayS = displayM < 1
+      ? displayM * 60
+      : 0
+    // reset minutes if seconds exist
+    displayS === 0
+      ? null
+      : displayM = 0
 
-    console.log(this.displayString, 0)
+    // update display
+    this._updateDisplayString(displayM, displayS)
+
   }
 
   // yields times given, first sessionT, then breakT
-  * _timeGenerator(breakT, sessionT) {
+  * _timeGenerator(breakT, sessionT, startFrom = null) {
+    // if you define a starting point, can be 
+    // "Break" or "Session", else starts from 
+    // "Session"
+
+    // sets lastValue to opposite what you want,
+    // so that later it switches back in the 
+    // while loop
+    this.currentBlockName = startFrom === "Break"
+      ? "Session"
+      : "Break"
     let lastValue = null
+
     while (true) {
-      if (lastValue === sessionT) {
+      if (this.currentBlockName === "Session") {
         lastValue = breakT
         this.currentBlockName = "Break"
       } else {
@@ -109,7 +201,7 @@ class clock {
       this.currentBlockEndTime = this.currentBlockEndTime + this.currentBlockTimeLeft
 
       // could be a dispatch, but no energy
-      const audio = document.getElementById('block-end-audio')
+      const audio = document.getElementById('beep')
       audio.play()
 
       // if there has been a change in seconds, not milliseconds, update
@@ -124,7 +216,6 @@ class clock {
       // then update
       this._updateDisplayString(displayTimeMinutes, displayTimeSeconds)
 
-      console.log(this.displayString, 1)
     }
 
   }
@@ -168,87 +259,33 @@ class clock {
     this._clockSetup(this.breakTimeMinutes, this.sessionTimeMinutes)
   }
 }
+// create a clock instance
+let timer = new clock(store.getState().breakTime, store.getState().sessionTime)
 
-const storeInitial = {
-  breakTime: 5,
-  sessionTime: 25,
-  active: false,
-  currentClockDisplay: "hi",
-  currentBlockDisplay: "session",
-};
-
-const clockReducer = (state = storeInitial, action) => {
-
-  // for setting break and session times
-  function newNumber(oldNumber, payload) {
-    // if payload number, return it as is
-    if (typeof payload === "number") {
-      return payload
-    }
-
-    function validNumber(number, maxVal = 60) {
-      return (number <= maxVal)
-        && (number >= 0)
-    };
-
-    let newNumber = payload === "+"
-      ? oldNumber + 1
-      : oldNumber - 1
-
-    newNumber = validNumber(newNumber)
-      ? newNumber
-      : oldNumber
-
-    return newNumber
-  };
-
-  switch (action.type) {
-    case 'breaktime/update':
-      return {
-        ...state,
-        breakTime: newNumber(state.breakTime, action.payload)
-      };
-    case 'sessiontime/update':
-      return {
-        ...state,
-        sessionTime: newNumber(state.sessionTime, action.payload)
-      };
-    case 'clockstate/update':
-      return {
-        ...state,
-        active: action.payload
-      };
-    case 'timerDisplay/update':
-      return {
-        ...state,
-        currentClockDisplay: action.payload
-      };
-    case 'blockDisplay/update':
-      return {
-        ...state,
-        currentBlockDisplay: action.payload
-      };
-    default:
-      return state;
-  };
-};
-
-const store = createStore(clockReducer);
+let firstClick = true
 
 let SelectorButtons = (props) => {
 
   const handleclick = (event) => {
     event.preventDefault()
-    props.dispatch({
-      type: `${props.for}time/update`,
-      payload: event.target.attributes.dir.value
-    })
+    // only move if clock is not running
+    if (!timer.loopActive) {
+      props.dispatch({
+        type: `${props.for}time/update`,
+        payload: event.target.attributes.dir.value
+      })
+      timer = new clock(store.getState().breakTime, store.getState().sessionTime, timer.currentBlockName)
+      props.dispatch({
+        type: "timerDisplay/update",
+        payload: timer.displayString
+      })
+    }
   };
 
   return (
     <div className="selectorbuttons-wrapper">
       <button
-        id={`${props.for}-inccrement`}
+        id={`${props.for}-increment`}
         dir="+"
         className="selector-button"
         onClick={handleclick}
@@ -309,7 +346,7 @@ const ClockAudio = () => {
   return (
     <audio
       src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/BeepSound.wav"
-      id="block-end-audio"
+      id="beep"
     >
     </audio>
   )
@@ -324,16 +361,9 @@ const ClockDisplay = (props) => {
   )
 }
 
-// create a clock instance
-let timer = new clock(store.getState().breakTime, store.getState().sessionTime)
-
-let firstClick = true
 const ClockControls = (props) => {
-
-
   const handleStartStop = (event) => {
     event.preventDefault()
-    console.log("startstop")
 
     // if first time starting, needs to get a new clock with session
     // and break lenghts from store
@@ -342,40 +372,36 @@ const ClockControls = (props) => {
         && props.breakTime === timer.breakTimeMinutes) {
         timer.startPause()
       } else {
-        console.log(storeInitial.breakTime)
-        timer.reset()
-        timer = new clock(props.breakTime, props.sessionTime)
+        timer = new clock(props.breakTime, props.sessionTime, timer.currentBlockName)
         timer.startPause()
       }
     } else {
       timer.startPause()
     }
   }
+  //  TODO: audio does not play. No hints in tests, they take a long time
+  //  The error:
+  //  1. When a countdown reaches zero (Note: timer MUST reach 00:00), 
+  //  a sound indicating that time is up should play. This should utilize 
+  //  an HTML5 <audio> tag and have a corresponding id="beep".
+  //  Timer has reached zero but audio is not playing while it should.: expected true to be /
 
   const handleReset = (event) => {
     event.preventDefault()
 
-    const audio = document.getElementById('block-end-audio')
+    const audio = document.getElementById('beep')
     audio.pause()
 
-    console.log("reset")
-    // could just always create new timer, i guess
-    if (props.sessionTime === timer.sessionTimeMinutes
-      && props.breakTime === timer.breakTimeMinutes) {
-      timer.reset()
-    } else {
-      console.log(storeInitial.breakTime)
-      timer.reset()
-      timer = new clock(storeInitial.breakTime, storeInitial.sessionTime)
-      props.dispatch({
-        type: `breaktime/update`,
-        payload: storeInitial.breakTime
-      })
-      props.dispatch({
-        type: `sessiontime/update`,
-        payload: storeInitial.sessionTime
-      })
-    }
+    timer.reset()
+    timer = new clock(storeInitial.breakTime, storeInitial.sessionTime)
+    props.dispatch({
+      type: `breaktime/update`,
+      payload: storeInitial.breakTime
+    })
+    props.dispatch({
+      type: `sessiontime/update`,
+      payload: storeInitial.sessionTime
+    })
   }
 
   return (
@@ -400,7 +426,9 @@ const ClockControls = (props) => {
 
 let ReactClock = (props) => {
   return (
-    <div>
+    <div
+      id="clock-wrapper"
+    >
       <BreakSelector></BreakSelector>
       <SessionSelector></SessionSelector>
       <div id="timer-label">
