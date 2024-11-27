@@ -1,0 +1,49 @@
+# Do not change code above this line. Use the PSQL variable above to query your database.
+
+echo "$($PSQL "TRUNCATE TABLE games, teams;")"
+
+cat testgames.csv | while IFS="," read YEAR ROUND WINNER OPPONENT W_GOALS O_GOALS
+do
+  #skip first line
+  if [[ $YEAR == 'year' ]]
+  then
+    continue
+  fi
+
+  #Get ids for teams
+  TID=$($PSQL"
+    SELECT team_id FROM teams WHERE name = '$WINNER';
+  ")
+  OID=$($PSQL"
+    SELECT team_id FROM teams WHERE name = '$OPPONENT';
+  ")
+
+  #Add teams to tables
+  add_to_table () {
+    # $1=name, returns new id
+    $PSQL "INSERT INTO teams(name) VALUES ('$1')"
+    # TEMPID so I can move the ID to TID or OID
+    TEMPID=$($PSQL"
+      SELECT team_id FROM teams WHERE name = '$1';
+    ")
+  }
+
+  # if ids empty, add to teams
+  if [[ -z $TID ]]
+  then
+    add_to_table $WINNER
+    TID=$TEMPID
+  fi
+  if [[ -z $OID ]]
+  then
+    add_to_table $OPPONENT
+    OID=$TEMPID
+  fi
+
+  echo $OID, $TID
+
+  #Add game to games table
+
+
+  #echo y:$YEAR r:$ROUND w:$WINNER o:$OPPONENT wg:$W_GOALS og:$O_GOALS
+done
