@@ -1,4 +1,5 @@
 import { combineReducers, createStore } from "redux";
+import exercises_list from "./exercises_list.json";
 
 // get from local storage
 const getActiveExercise = () => {
@@ -27,10 +28,7 @@ const setActiveExercise = (exercise = null) => {
 
 // set initial state for store
 const exerciseInitialState = {
-  list: [
-    "Random Quote Machine",
-    "Markdown Previewer"
-  ],
+  list: exercises_list.list,
   // check localstorage if there is an active exercise
   active: getActiveExercise(),
 }
