@@ -107,6 +107,7 @@ const main = (data) => {
 // and then from outside site, then runs main program
 let data = sessionStorage.getItem("barChData")
 if (data === null) {
+  console.log("fetching data")
   fetch('https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json')
     // don't know why, but the response has a json function?
     // which gives a js object
@@ -118,7 +119,6 @@ if (data === null) {
     .then(respData => {
       // save object as json
       sessionStorage.setItem("barChData", JSON.stringify(respData))
-      console.log("fetching data")
       main(respData)
     })
     .catch(error => {
