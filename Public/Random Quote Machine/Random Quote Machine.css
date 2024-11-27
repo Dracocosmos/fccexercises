@@ -1,22 +1,57 @@
-*,
-*::before,
-*::after {
+/* any variables go here */
+:root {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-}
 
-/* any variables go here */
-:root {
+  --background-color: #002118;
+  --box-color: #88a17f;
+
+  background-color: var(--background-color);
 }
 
 /* main box */
 #quote-box {
   /* center */
-  margin: auto;
-  width: 50%;
+  margin: min(40px, max(5px, 1vw)) auto 0 auto;
+  width: min(700px, max(300px, 60vw));
 
   /* background */
-  background-color: green;
+  background-color: var(--box-color);
   border-radius : 5px;
+}
+
+/* tweet icon */
+.fa-icon {
+  width: 100%;
+  text-align: center;
+  position: relative;
+
+  /* size of bird */
+  font-size: 1.5rem;
+
+  /* center the icon */
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Buttons */
+.button-style {
+  background-color: green;
+
+  border: 2px solid black;
+  border-radius: 4px;
+  outline: 0;
+
+  width: 100px;
+  min-height: 40px;
+
+  cursor: pointer;
+
+  /* reset button styling */
+  /* border: none; */
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  box-sizing: border-box;
 }

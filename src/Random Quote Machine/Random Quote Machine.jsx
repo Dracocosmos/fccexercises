@@ -1,13 +1,19 @@
-import reactDom from "react-dom";
+import ReactDOM from "react-dom";
 import React from "react";
-import { Provider } from "react-redux";
-import exerciseStore from "../exerciseStore";
-import Reset from "../Reset";
-import $ from "jquery";
+
 import { createStore } from "redux";
+import { Provider } from "react-redux";
+
+import $ from "jquery";
+
+// for getting logos
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faTwitter as tweetIcon } from '@fortawesome/free-brands-svg-icons'
 
 // for hot loading css
 import "../../Public/Random Quote Machine/Random Quote Machine.css"
+// for resetting to the exercise menu
+import Reset from "../Reset";
 
 // initial store state
 // TODO: maybe get them from somewhere?
@@ -45,6 +51,9 @@ const quoteReducer = (state = storeInitial, action) => {
 
 const store = createStore(quoteReducer);
 
+// import { faCamera } from '@fortawesome/fontawesome-svg-core'
+const FaIcon = () => <FontAwesomeIcon icon={tweetIcon} className="fa-icon" />
+
 // tweet button element
 class TweetButton extends React.Component {
   constructor(props) {
@@ -77,7 +86,7 @@ class TweetButton extends React.Component {
 
   render() {
     return (
-      <div id="tweet_wrap">
+      <div id="tweet_wrap" className="button-style">
         <a
           // whenever you middle click:
           onAuxClick={this.linkHref}
@@ -85,7 +94,7 @@ class TweetButton extends React.Component {
           onClick={this.linkHref}
           href={this.tweetQuoteHTML()}
           id="tweet-quote">
-          Tweet Quote
+          <FaIcon></FaIcon>
         </a>
       </div>
     )
@@ -125,7 +134,8 @@ class QuoteBox extends React.Component {
         <button
           type="button"
           id="new-quote"
-          onClick={this.updateQuote}>
+          onClick={this.updateQuote}
+          className="button-style">
           New Quote
         </button>
         <TweetButton></TweetButton>
@@ -134,12 +144,10 @@ class QuoteBox extends React.Component {
   };
 };
 
-reactDom.render(
-  <Provider store={exerciseStore}>
+ReactDOM.render(
+  <Provider store={store}>
     <Reset></Reset>
-    <Provider store={store}>
-      <QuoteBox />
-    </Provider>
+    <QuoteBox />
   </Provider>,
   // jquery returns a jquery object. 
   // First thing in it is the native DOM element
