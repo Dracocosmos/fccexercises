@@ -6,11 +6,17 @@
   padding: 0;
 }
 
+/* any variables go here */
 :root {
 }
 
+/* main box */
 #quote-box {
+  /* center */
   margin: auto;
   width: 50%;
+
+  /* background */
   background-color: green;
+  border-radius : 5px;
 }

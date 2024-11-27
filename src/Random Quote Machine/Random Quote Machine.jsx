@@ -63,7 +63,6 @@ class TweetButton extends React.Component {
   }
 
   updateState() {
-    console.log("hi")
     this.setState(() => {
       return {
         ...store.getState()
@@ -73,7 +72,6 @@ class TweetButton extends React.Component {
 
   linkHref() {
     this.updateState();
-    console.log("hi")
     $("#tweet-quote").attr("href", this.tweetQuoteHTML());
   }
 
@@ -118,7 +116,9 @@ class QuoteBox extends React.Component {
   render() {
     return (
       <div id="quote-box">
-        <h2 id="text">{this.state.currentQuote[1]}</h2>
+        <h2 id="text">
+          "{this.state.currentQuote[1]}"
+        </h2>
         <div id="author">
           <span>{this.state.currentQuote[0]}</span>
         </div>
