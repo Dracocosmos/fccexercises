@@ -10,15 +10,28 @@ import $ from "jquery";
 
 import * as d3 from "d3"
 
-const width = 928;
-const height = 500;
+const data = [1, 2, 3]
 
-d3.select("body")
-  .text("hi")
+const width = 400;
+const height = 200;
 
-// scales
-const scY = d3.scaleLinear()
-const scX = d3.scaleLinear()
+// Create a SVG container.
+const svg = d3.select("body")
+  .append("svg")
+  .attr("width", width)
+  .attr("height", height)
+  .attr("background-color", "blue")
+
+svg.selectAll("rect")
+  .data(data)
+  .enter()
+  .append("rect")
+  .attr("x", (d, i) => {
+    return i * 30
+  })
+  .attr("y", (d) => height - d * 10)
+  .attr("width", 25)
+  .attr("height", (d) => d * 10)
 
 ReactDOM.render(
   <div>

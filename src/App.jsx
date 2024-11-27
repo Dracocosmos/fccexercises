@@ -16,14 +16,26 @@ const App = () => {
   // load the active exercise
   if (exercises.active) {
     import(`./${exercises.active}/${exercises.active}.jsx`)
-      .catch((_error) => {
-        console.log(".jsx file not found, trying .js")
+      // this catches all errors in the exercise js and jsx
+      // so it needs ifs
+      .catch((error) => {
+        if (error.message.includes("Cannot find module")) {
+          console.log(".jsx file not found, trying .js")
 
-        // if jsx file not found, try js
-        import(`./${exercises.active}/${exercises.active}.js`)
-          .catch((error) => {
-            console.error(".js file not found", error)
-          })
+          // if jsx file not found, try js
+          import(`./${exercises.active}/${exercises.active}.js`)
+            .catch((error) => {
+              if (error.message.includes("Cannot find module")) {
+                console.error(".js file not found, ", error)
+              } else {
+                console.error(error)
+              }
+            })
+
+        } else {
+          console.error(error)
+        }
+
       })
     return
   };
