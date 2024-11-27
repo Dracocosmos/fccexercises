@@ -50,7 +50,7 @@ const findOneByFood = (food, done) => {
 };
 
 const findPersonById = (personId, done) => {
-  Person.findById(personId).exec(function(err, data) {
+  Peron.findById(personId).exec(function(err, data) {
     console.log(data, err)
     if (err) return console.error(err);
     done(null, data);
@@ -72,22 +72,58 @@ const findEditThenSave = (personId, done) => {
 
 const findAndUpdate = (personName, done) => {
   const ageToSet = 20;
-
-  done(null /*, data*/);
+  Person.findOneAndUpdate(
+    // search this
+    { name: personName },
+    // set to this
+    { age: ageToSet },
+    // this makes it return the new document, not old
+    { new: true },
+    // callback
+    function(err, data) {
+      console.log(data, err)
+      if (err) return console.error(err);
+      done(null, data);
+    }
+  );
 };
 
 const removeById = (personId, done) => {
-  done(null /*, data*/);
+  Person.findByIdAndRemove(personId,
+    function(err, data) {
+      console.log(data, err)
+      if (err) return console.error(err);
+      done(null, data);
+    }
+  );
 };
 
 const removeManyPeople = (done) => {
   const nameToRemove = "Mary";
-
-  done(null /*, data*/);
+  const data = Person.remove(
+    { name: nameToRemove },
+    function(err, data) {
+      console.log(data)
+      if (err) return console.error(err);
+      done(null, data);
+    }
+  )
 };
 
 const queryChain = (done) => {
   const foodToSearch = "burrito";
+  Person
+    .find(
+
+  )
+    .sort(
+  )
+    .limit(
+  )
+    .select(
+  )
+    .exec()
+
 
   done(null /*, data*/);
 };
