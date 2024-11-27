@@ -16,8 +16,6 @@ import $ from "jquery";
 
 import * as d3 from "d3"
 
-// const data = [1, 2, 3, 3, 2, 1, 4]
-
 // data location: 
 // https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json
 
@@ -25,7 +23,7 @@ const main = (data) => {
   console.log(data.data)
   console.log(data.data[0])
   data = data.data
-  const width = 1000;
+  const width = 1100;
   const height = 400;
   const scalePadding = 50;
   const topPadding = 5;
@@ -55,11 +53,6 @@ const main = (data) => {
     .attr("height", height)
     .attr("id", "title")
 
-  // add tooltip
-  svg.append("title")
-    .text("gdp-chart")
-    .attr("id", "tooltip")
-
   // create bars
   svg.selectAll("rect")
     .data(data)
@@ -78,32 +71,36 @@ const main = (data) => {
     .attr("class", "bar")
     .attr("data-date", (d) => d[0])
     .attr("data-gdp", (d) => d[1])
-    // add tooltip
-    .append("title")
-    .text((d) => d[0])
-    .attr("id", "tooltip")
-    .attr("data-date", (d) => d[0])
 
-  // svg.selectAll("rect")
-  //   .on("mouseover", (t) => console.log(t.target.children.tooltip))
+  // add tooltip
+  const tooltipNode = document.createElement('tooltip');
+  $("body").append(tooltipNode)
+  tooltipNode.classList.add("tooltip")
+  tooltipNode.setAttribute("id", "tooltip")
+  // get location and data for tooltip
+  svg.selectAll("rect")
+    // document.getElementById("hi").sty
+    .on("mouseover", (t) => {
+      const tipDataDate = t.originalTarget.getAttribute("data-date")
+      tooltipNode.classList.add("tooltip-hover")
+      tooltipNode.innerText = tipDataDate
+      tooltipNode.setAttribute("data-date", tipDataDate)
+      tooltipNode.style.left = (t.clientX + 10) + "px"
+      tooltipNode.style.top = (t.clientY - 20) + "px"
+    })
+    .on("mouseout", (_t) => {
+      tooltipNode.classList.remove("tooltip-hover")
+    })
 
   // create axis lines
   svg.append("g")
     .attr("transform", `translate(0,${height - scalePadding})`)
     .call(d3.axisBottom(xSc))
     .attr("id", "x-axis")
-    // add tooltip
-    .append("title")
-    .text("x-axis")
-    .attr("id", "tooltip")
   svg.append("g")
     .attr("transform", `translate(${scalePadding},0)`)
     .call(d3.axisLeft(ySc))
     .attr("id", "y-axis")
-    // add tooltip
-    .append("title")
-    .text("y-axis")
-    .attr("id", "tooltip")
 }
 
 // fetches data from localstorage,
