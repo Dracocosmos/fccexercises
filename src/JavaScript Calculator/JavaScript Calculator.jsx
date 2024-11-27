@@ -16,6 +16,7 @@ import Reset from "../Reset";
 const storeInitial = {
   currentTotal: 0,
   currentFormula: [],
+  currentFormulaString: "",
   acceptableButtons: {
     "0": { type: "number", id: "zero" },
     "1": { type: "number", id: "one" },
@@ -27,13 +28,14 @@ const storeInitial = {
     "7": { type: "number", id: "seven" },
     "8": { type: "number", id: "eight" },
     "9": { type: "number", id: "nine" },
-    ".": { type: "decimal point", id: "dot" },
+    ".": { type: "decimal point", id: "decimal" },
     ",": { type: "alias", id: "comma", aliasFor: "." },
-    "/": { type: "operator", id: "division" },
-    "*": { type: "operator", id: "multiplication" },
-    "-": { type: "operator", id: "subtraction" },
-    "+": { type: "operator", id: "addition" },
-    "Enter": { type: "enter", id: "enter" },
+    "/": { type: "operator", id: "divide" },
+    "*": { type: "operator", id: "multiply" },
+    "-": { type: "operator", id: "subtract" },
+    "+": { type: "operator", id: "add" },
+    "=": { type: "enter", id: "equals" },
+    "Enter": { type: "alias", id: "enter", aliasFor: "=" },
     "Backspace": { type: "backspace", id: "backspace" }
   },
 };
@@ -44,33 +46,40 @@ class formulaBlock {
     this.value = value;
     this.validNumber = false;
 
+    // if first char in value is .
     if (this.type === "decimal point") {
       this.type = "number";
       this.value = "0.";
-      if (this.value === "-") {
-        this.value = "-0."
-      };
     };
   }
 
   checkIfValidNumber() {
-    const invalid = ["", "0", "-0"]
-
-    const isValid = (invValue) => {
+    // these are invalid numbers
+    const invalid = ["", "-0.", "-."]
+    const isInInvalid = (invValue) => {
       return this.value === invValue;
     };
 
-    if (invalid.some(isValid)) {
-      this.validNumber = false;
+    // if any are invalid, return false
+    if (invalid.some(isInInvalid)) {
+      return false
     } else {
-      this.validNumber = true;
+      return true
     };
   }
 
-  removeTrailingDot() {
+  removeInvalid() {
     if (this.value.endsWith('.')) {
       this.value = this.value.slice(0, -1);
     };
+
+    // if not valid
+    if (!this.checkIfValidNumber()) {
+      this.value = "";
+      this.validNumber = false;
+      return true;
+    };
+    return false;
   }
 
   backspaceValue() {
@@ -88,6 +97,10 @@ class formulaBlock {
         switch (value) {
           // if updating with decimal point
           case ".":
+            // if you have just a - in value
+            if (this.value === "-") {
+              this.value = "-0."
+            };
             if (!this.value.includes(".")) {
               this.value = this.value + value;
             };
@@ -115,7 +128,13 @@ class formulaBlock {
 
           // if updating with number
           default:
-            this.value = this.value + value;
+            // if value is 0
+            if (this.value === "0"
+              || this.value === "-0") {
+              this.value = value;
+            } else {
+              this.value = this.value + value;
+            };
             break;
         };
 
@@ -141,20 +160,49 @@ const calculatorReducer = (state = storeInitial, action) => {
         pressedButton = buttons[pressedButton.aliasFor];
       };
 
-      // so that decimal point goes to number type
+      // sometimes decimal point needs to be a number
       const pressedButtonType = pressedButton.type === "decimal point"
         ? "number"
         : pressedButton.type;
 
       const formula = state.currentFormula;
 
+      const returnHelper = () => {
+        const formulaString = state.currentFormula.map((entry) => entry.value).join("");
+        return {
+          ...state,
+          currentFormula: formula,
+          currentFormulaString: formulaString
+        };
+      };
+
       // if first block, make new
       if (formula.length === 0) {
         const newBlock = new formulaBlock(pressedButton.type, action.payload)
-        formula.push(newBlock);
 
-        console.log(existingBlock)
+        switch (action.payload) {
+          // if first pressed is a backspace
+          case 'Backspace':
+            break;
+
+          // if first pressed is a -
+          case '-':
+            newBlock.type = "number"
+            formula.push(newBlock);
+            break;
+
+          default:
+            // if first pressed is not an operator
+            if (pressedButtonType !== "operator") {
+              formula.push(newBlock);
+            };
+            break;
+        }
+
+        console.log(newBlock, "new block created")
+        console.log(existingBlock, "1")
         console.log(...formula.map((block) => block.value))
+        returnHelper();
         return {
           ...state,
           currentFormula: formula
@@ -172,22 +220,20 @@ const calculatorReducer = (state = storeInitial, action) => {
           formula.pop();
         };
 
-        console.log(existingBlock)
+        console.log(existingBlock, "2")
         console.log(...formula.map((block) => block.value))
         return {
           ...state,
           currentFormula: formula
         };
-      };
 
-      // if block types don't match
-      if (existingBlock.type !== pressedButtonType) {
+        // add entry if block types don't match
+      } else if (existingBlock.type !== pressedButtonType) {
         // if negating a number
         if (existingBlock.value === "-"
           && existingBlock.type === "number"
         ) {
-          console.log("hi")
-          console.log(existingBlock)
+          console.log(existingBlock, "3")
           console.log(...formula.map((block) => block.value))
           return {
             ...state,
@@ -195,14 +241,17 @@ const calculatorReducer = (state = storeInitial, action) => {
           };
         };
 
-        // remove dot in previous block end
-        existingBlock.removeTrailingDot();
+        // remove invalid previous block
+        if (existingBlock.removeInvalid()) {
+          formula.pop();
+          formula.pop();
+        };
 
         const newBlock = new formulaBlock(pressedButton.type, action.payload)
         formula.push(newBlock);
         existingBlock = formula[formula.length - 1];
 
-        // if block types match
+        // add entry if block types match
       } else {
         // if negating a number
         if (existingBlock.type === "operator"
@@ -214,23 +263,23 @@ const calculatorReducer = (state = storeInitial, action) => {
           existingBlock.updateValue(action.payload)
         };
       };
-      // TODO: . is not working, it does not create a 0 before it if negative
-      console.log(existingBlock)
+
+      console.log(existingBlock, "4")
       console.log(...formula.map((block) => block.value))
       return {
         ...state,
         currentFormula: formula
       };
-    case 'formula/calculate':
-      //TODO: make string valid, even if it has operator at end, 00 at start etc
-      const formulaString = state.currentFormula.join("");
 
-      // format string for eval
-      let firstEntry = state.acceptableButtons[formulaString[0]];
-      let lastEntry = state.acceptableButtons[formulaString[-1]];
+    case 'formula/calculate':
+      const formulaString = state.currentFormula.map((entry) => entry.value).join("");
+      const evaluatedString = eval(formulaString).toString();
+
+      console.log(evaluatedString)
       return {
         ...state,
-        currentTotal: eval(formulaString)
+        currentFormula: [new formulaBlock("number", evaluatedString)],
+        currentTotal: evaluatedString
       };
     default:
       return state;
@@ -244,7 +293,8 @@ const userInput = (key) => {
   if (Object.keys(storeInitial.acceptableButtons)
     // gets the first class in classlist
     .includes(key)) {
-    if (key === "Enter") {
+    if (key === "Enter"
+      || key === "=") {
       store.dispatch({
         type: "formula/calculate"
       })
@@ -275,11 +325,10 @@ const Pad = (props) => {
   )
 };
 
-
 const NumberPad = () => {
   // Send all of the acceptable keys to create individual buttons
   return (
-    <div id="">
+    <div id="buttons-div">
       {Object.entries(store.getState().acceptableButtons)
         .map((buttonInfo, index) => {
           // only real buttons, not their aliases
@@ -294,7 +343,20 @@ const NumberPad = () => {
   )
 };
 
-const Calculator = (props) => {
+// TODO: does not show currentformula string or otherwise
+const Display = (props) => {
+  // const formulaString = props.formula.currentFormula.map(
+  //   (block) => block.value).join("");
+
+  console.log(props.formula.currentFormula, "in Display")
+  return (
+    <div>
+      {[props.formula.currentFormula, props.formula.currentTotal]}
+    </div>
+  )
+}
+
+let Calculator = (props) => {
   // calculator button hits
   const handleKeyDown = (event) => {
     event.preventDefault();
@@ -314,14 +376,18 @@ const Calculator = (props) => {
 
   return (
     <div>
+      <Display formula={props}></Display>
       <NumberPad></NumberPad>
     </div>
   );
 };
 
-const mapStateToProps = (state) => ({ ...state });
+const mapStateToProps = (state, _ownprops) => ({
+  currentFormula: state.currentFormulaString,
+  currentTotal: state.currentTotal
+});
 const mapDispatchToProps = {};
-connect(mapStateToProps, mapDispatchToProps)(Calculator);
+Calculator = connect(mapStateToProps, mapDispatchToProps)(Calculator);
 
 ReactDOM.render(
   <Provider store={store}>
