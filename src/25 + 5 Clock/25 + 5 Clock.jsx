@@ -192,6 +192,14 @@ class clock {
     // also for making new string
     const currentTimeLeftSeconds = Math.ceil(this.currentBlockTimeLeft / 1000)
 
+    // play audio when 0 reached
+    if (currentTimeLeftSeconds == 0) {
+      // could be a dispatch, but no energy
+      const audio = document.getElementById('beep')
+      audio.volume = 0.2;
+      audio.play()
+    }
+
     // if timer has run out
     if (currentTimeLeftSeconds < 0) {
       // get new value from generator, to add to end time, +1000 so I can end
@@ -199,10 +207,6 @@ class clock {
       this.currentBlockTimeLeft = this.nextBlockGenerator.next().value + 1000
       // and displaying the new left over time
       this.currentBlockEndTime = this.currentBlockEndTime + this.currentBlockTimeLeft
-
-      // could be a dispatch, but no energy
-      const audio = document.getElementById('beep')
-      audio.play()
 
       // if there has been a change in seconds, not milliseconds, update
     } else if (this.timeLeftSeconds - currentTimeLeftSeconds != 0) {
@@ -302,11 +306,20 @@ let SelectorButtons = (props) => {
 
 let BreakSelector = (props) => {
   return (
-    <div id="breakselector-container">
-      <div id="break-label">
+    <div
+      id="breakselector-container"
+      className="selector-container"
+    >
+      <div
+        id="break-label"
+        className="selector-label"
+      >
         Break Length
       </div>
-      <div id="break-length">
+      <div
+        id="break-length"
+        className="selector-value"
+      >
         {props.breakTime}
       </div>
       <SelectorButtons
@@ -322,11 +335,20 @@ BreakSelector = connect(mapBreakStateToProps)(BreakSelector)
 
 let SessionSelector = (props) => {
   return (
-    <div id="sessionselector-container">
-      <div id="session-label">
+    <div
+      id="sessionselector-container"
+      className="selector-container"
+    >
+      <div
+        id="session-label"
+        className="selector-label"
+      >
         Session Length
       </div>
-      <div id="session-length">
+      <div
+        id="session-length"
+        className="selector-value"
+      >
         {props.sessionTime}
       </div>
       <SelectorButtons
@@ -355,8 +377,21 @@ const ClockAudio = () => {
 const ClockDisplay = (props) => {
   // mm:ss 25:00
   return (
-    <div id="time-left">
-      {props.currentClockDisplay}
+    <div
+      id="clock-display-wrapper"
+      className="selector-container"
+    >
+      <div
+        id="timer-label"
+        className="selector-label"
+      >
+        {props.currentBlockDisplay}
+      </div>
+      <div id="time-left"
+        className="selector-value"
+      >
+        {props.currentClockDisplay}
+      </div>
     </div>
   )
 }
@@ -379,18 +414,13 @@ const ClockControls = (props) => {
       timer.startPause()
     }
   }
-  //  TODO: audio does not play. No hints in tests, they take a long time
-  //  The error:
-  //  1. When a countdown reaches zero (Note: timer MUST reach 00:00), 
-  //  a sound indicating that time is up should play. This should utilize 
-  //  an HTML5 <audio> tag and have a corresponding id="beep".
-  //  Timer has reached zero but audio is not playing while it should.: expected true to be /
 
   const handleReset = (event) => {
     event.preventDefault()
 
     const audio = document.getElementById('beep')
     audio.pause()
+    audio.currentTime = 0
 
     timer.reset()
     timer = new clock(storeInitial.breakTime, storeInitial.sessionTime)
@@ -409,6 +439,7 @@ const ClockControls = (props) => {
       <button
         id="start_stop"
         onClick={handleStartStop}
+        className="control-button"
       >
         {props.active
           ? "Stop"
@@ -417,6 +448,7 @@ const ClockControls = (props) => {
       <button
         id="reset"
         onClick={handleReset}
+        className="control-button"
       >
         Reset
       </button>
@@ -431,12 +463,10 @@ let ReactClock = (props) => {
     >
       <BreakSelector></BreakSelector>
       <SessionSelector></SessionSelector>
-      <div id="timer-label">
-        {props.currentBlockDisplay}
-      </div>
       <ClockDisplay
         active={props.active}
         currentClockDisplay={props.currentClockDisplay}
+        currentBlockDisplay={props.currentBlockDisplay}
       ></ClockDisplay>
       <ClockControls
         dispatch={props.dispatch}
