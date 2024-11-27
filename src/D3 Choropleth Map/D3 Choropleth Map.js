@@ -190,7 +190,6 @@ const main = (eduData, mapData) => {
   }
 
   // For removing hovering tooltip highlight
-  let prevCounty = null
   const removeHighlight = (element) => {
     const color = element.attributes['data-color'].value
     d3.select(element)
@@ -199,6 +198,7 @@ const main = (eduData, mapData) => {
   }
 
   // For hovering tooltip
+  let prevCounty = null
   const mouseMove = (e) => {
 
     // get elements from where hovered
@@ -224,7 +224,8 @@ const main = (eduData, mapData) => {
         <br/>
         <span>Percentage: ${countyData.bachelorsOrHigher}</span>
       `)
-      .attr('data-education', countyE.attributes['data-education'].value)
+      // .attr('data-education', countyE.attributes['data-education'].value)
+      .attr('data-education', countyData.bachelorsOrHigher)
 
     // highlight current county
     d3.select(countyE)
@@ -249,6 +250,9 @@ const main = (eduData, mapData) => {
     // show tooltip
     tooltip
       .style('display', 'inline')
+      // data-education needs to be here so that it passes tests?
+      // wanted it in the mousemove, but nope
+      .attr('data-education', _e.target.attributes['data-education'].value)
   }
   const onLeave = (_e, _d) => {
     document.removeEventListener('mousemove', mouseMove, false);
@@ -289,6 +293,8 @@ const main = (eduData, mapData) => {
     .style('fill', (d) => {
       const county = eduObject[d.id]
       const color = colors(cSc(county.bachelorsOrHigher))
+      // set eduObject to have a color property,
+      // used later to set data-color attribute
       county['data-color'] = color
       return color
     })
@@ -344,13 +350,12 @@ const main = (eduData, mapData) => {
     })
     .style('fill', "white")
     .style('fill-opacity', "0")
-    // .attr('pointer-events', 'none')
-    .on('mouseover', onHover)
-    .on('mouseout', onLeave)
+    // .on('mouseover', onHover)
+    // .on('mouseout', onLeave)
     .style("pointer-events", "none")
 }
 
-// fetches data from localstorage,
+// fetches data from session storage,
 // and then from outside site
 const fetchData = (url, storageName) => {
   return new Promise((resolve, reject) => {
@@ -397,6 +402,7 @@ const mapData = fetchData(
   'choroplethMapData'
 )
 
+// run main program
 Promise.all([eduData, mapData])
   .then((values) => {
     main(values[0], values[1])
