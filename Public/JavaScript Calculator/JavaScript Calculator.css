@@ -1,28 +1,102 @@
+/* resets button css */
+Button {
+  border: none;
+  margin: 0;
+  padding: 0;
+  width: auto;
+  overflow: visible;
+
+  background: transparent;
+
+  /* inherit font & color from ancestor */
+  color: inherit;
+  font: inherit;
+
+  /* Normalize `line-height`. Cannot be changed from `normal` in Firefox 4+. */
+  line-height: normal;
+
+  /* Corrects font smoothing for webkit */
+  -webkit-font-smoothing: inherit;
+  -moz-osx-font-smoothing: inherit;
+
+  /* Corrects inability to style clickable `input` types in iOS */
+  -webkit-appearance: none;
+}
+
+/* Remove excess padding and border in Firefox 4+ */
+&::-moz-focus-inner {
+    border: 0;
+    padding: 0;
+}
+
 /* can't use * as selector on codepen */
+* {
+  -webkit-box-sizing:border-box;
+  -moz-box-sizing:border-box;
+  -ms-box-sizing:border-box;
+  box-sizing:border-box;
+  margin: 0;
+  padding: 0;
+}
 
 :root {
+  --buttonWidth: 80px;
+  --buttonColAmount: 4;
+
+  --displayColor: #f9fff7;
+  --backgroundColor: #e9f0e6;
+  --borderColor: #f5b66e;
+  --buttonColor: #dbffcf;
+  --buttonHoverColor: #164a00;
+  --buttonActiveColor: white;
+
+  --borderWidth: 1px;
+  --borders: var(--borderWidth) solid var(--borderColor);
 }
 
 body {
-  /* these didn't work in root for some reason */
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  font-family: Verdana, sans-serif;
+  font-size: 2em;
   
-  --buttonWidth: 80px;
-  --buttonColAmount: 4;
+  background-color: var(--backgroundColor);
 }
 
 #calculator-container {
-  margin: 10px auto;
-  height: 600px;
-  width: calc(var(--buttonWidth) * 
-    var(--buttonColAmount))
+  margin: 5vh auto;
+
+  --surroundWidth: 3px;
+  border: var(--surroundWidth) black solid;
+  border-radius: 5px;
+
+  width: calc(
+    var(--buttonWidth)
+    * var(--buttonColAmount)
+    + (var(--borderWidth) * 2)
+    + (var(--surroundWidth) * 2)
+  );
 }
 
-#display-container * {
-  height: 20px;
-  background-color: grey;
+#display-container {
+  height: 120px;
+  background-color: var(--displayColor);
+
+  border: var(--borders);
+  border-bottom-width: 0;
+
+}
+
+#display-container div {
+  display: flex;
+  flex-direction: row-reverse;
+  overflow-x: scroll;
+
+  font-size: 1em;
+  width: 120px;
+
+  height: 50%;
+  width: 100%;
+
+  border: var(--borders);
 }
 
 #button-container {
@@ -40,4 +114,21 @@ body {
     var(--buttonWidth)
   );
   grid-template-rows: repeat(5, 80px);
+
+  border: var(--borders);
+}
+
+.pad-button {
+  border: var(--borders);
+
+  background-color: var(--buttonColor);
+}
+.pad-button:hover {
+  color: white;
+
+  background-color: var(--buttonHoverColor);
+}
+.pad-button:active {
+  color: black;
+  background-color: var(--buttonActiveColor);
 }
