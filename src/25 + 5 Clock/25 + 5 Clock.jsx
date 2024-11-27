@@ -20,26 +20,26 @@ class clock {
 
   // for both reset and constructor
   _clockSetup(breakTime, sessionTime) {
+    this.loopActive = false
+
+    // in ms until otherways said
     this.breakTime = breakTime * 60 * 1000
     this.sessionTime = sessionTime * 60 * 1000
     this.sessionTimeMinutes = sessionTime
     this.breakTimeMinutes = breakTime
 
+    // gives out ms values, first for session, then break, to infinity
     this.nextBlockGenerator = this._timeGenerator(this.breakTime, this.sessionTime)
-    this.currentBlockTime = this.nextBlockGenerator.next().value
-
-    this.loopActive = false
+    this.currentBlockTimeLeft = this.nextBlockGenerator.next().value
 
     // how much time left in the currently running block
     // either pause or break
-    this.timeLeftSeconds = this.currentBlockTime / 60
+    this.timeLeftSeconds = this.currentBlockTimeLeft / 60
 
-    const tempS = this.sessionTimeMinutes.toString()
-    this.displayString = tempS.length > 1
-      ? tempS + ":00"
-      : "0" + tempS + ":00"
+    // starting value for display
+    this._updateDisplayString(this.sessionTimeMinutes)
 
-    console.log(this.displayString)
+    console.log(this.displayString, 0)
   }
 
   // yields times given, first sessionT, then breakT
@@ -53,46 +53,65 @@ class clock {
     }
   }
 
+  // for updating this.displayString
+  _updateDisplayString(minutes = 0, seconds = 0) {
+    // make strings of the numbers
+    const addZeroReturnString = (number) => {
+      let string = number.toString()
+      return string.length > 1
+        ? string
+        : "0" + string
+    }
+    // update value
+    this.displayString = addZeroReturnString(minutes)
+      + ":"
+      + addZeroReturnString(seconds)
+
+    store.dispatch({ type: "timerDisplay/update", payload: this.displayString })
+  }
+
+  // for local timer loop, called in loop
   async _updateTimes() {
     // get new time in ms
     const currentTime = Date.now()
 
     // new time left in ms
-    this.currentBlockTime = this.currentBlockEndTime - currentTime
-    this.currentBlockTime = this.currentBlockTime < 0
+    this.currentBlockTimeLeft = this.currentBlockEndTime - currentTime
+    this.currentBlockTimeLeft = this.currentBlockTimeLeft < 0
       ? 0
-      : this.currentBlockTime
+      : this.currentBlockTimeLeft
 
     // time in seconds for if you want to update, didn't want to compare strings
     // also for making new string
-    const currentTimeLeftSeconds = Math.floor(this.currentBlockTime / 1000)
+    const currentTimeLeftSeconds = Math.ceil(this.currentBlockTimeLeft / 1000)
 
-    // if there has been a change in seconds, not milliseconds, update
-    if (this.timeLeftSeconds - currentTimeLeftSeconds != 0) {
+    // if timer has run out
+    if (currentTimeLeftSeconds === 0) {
+      // get new value from generator, to add to end time,
+      this.currentBlockTimeLeft = this.nextBlockGenerator.next().value
+      // and displaying the new left over time
+      this.currentBlockEndTime = this.currentBlockEndTime + this.currentBlockTimeLeft
+
+      // if there has been a change in seconds, not milliseconds, update
+    } else if (this.timeLeftSeconds - currentTimeLeftSeconds != 0) {
       // save for next comparison
       this.timeLeftSeconds = currentTimeLeftSeconds
 
       // for updating display, first make numbers
       const displayTimeMinutes = Math.floor(currentTimeLeftSeconds / 60)
       const displayTimeSeconds = currentTimeLeftSeconds - displayTimeMinutes * 60
-      // then make string of those numbers
-      const addZeroReturnString = (number) => {
-        let string = number.toString()
-        return string.length > 1
-          ? string
-          : "0" + string
-      }
-      this.displayString = addZeroReturnString(displayTimeMinutes)
-        + ":"
-        + addZeroReturnString(displayTimeSeconds)
 
-      console.log(this.displayString)
+      // then update
+      this._updateDisplayString(displayTimeMinutes, displayTimeSeconds)
+
+      console.log(this.displayString, 1)
     }
 
   }
 
+  // this runs the checking timing for timer
   async _loop() {
-    this.loopActive = true
+    // this.loopActive = true
 
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
@@ -103,23 +122,22 @@ class clock {
       await sleep(10)
       // async function so loop does not lag
       this._updateTimes()
-
-      // if timer has run out
-      if (this.currentBlockTime < 9) {
-        this.currentBlockTime = this.nextBlockGenerator.next().value
-        this.currentBlockEndTime = this.currentBlockEndTime + this.currentBlockTime
-      }
     }
   }
 
-  start() {
-    this.startTime = Date.now()
-    this.currentBlockEndTime = this.currentBlockTime + this.startTime
-    this._loop()
-  }
-
-  pause() {
-    this.loopActive = false
+  // these are for controlling the clock from the outside
+  startPause() {
+    this.loopActive = !this.loopActive
+    if (!this.loopActive) {
+      // this.loopActive = false
+    } else {
+      // this is for comparing against in the loop
+      this.startTime = Date.now()
+      // this is the calculated endtime for timer. Adds to itself every time
+      // started again so timer doesn't reset itself
+      this.currentBlockEndTime = this.currentBlockTimeLeft + this.startTime
+      this._loop()
+    }
   }
 
   reset() {
@@ -133,14 +151,9 @@ const storeInitial = {
   sessionTime: 25,
   sessionTime: 0.1,
   active: false,
-  currentTimer: null,
+  currentClockDisplay: "hi",
   clock: null,
 };
-// use values from initial store to init a clock
-storeInitial.clock = new clock(
-  storeInitial.breakTime,
-  storeInitial.sessionTime,
-);
 
 const clockReducer = (state = storeInitial, action) => {
 
@@ -163,6 +176,7 @@ const clockReducer = (state = storeInitial, action) => {
   };
 
   switch (action.type) {
+    // use values from initial store to init a clock
     case 'breaktime/update':
       return {
         ...state,
@@ -174,17 +188,18 @@ const clockReducer = (state = storeInitial, action) => {
         sessionTime: newNumber(state.sessionTime, action.payload)
       };
     case 'clockstate/update':
-      state.active
-        ? state.clock.pause()
-        : state.clock.start()
       return {
         ...state,
         active: !state.active
       };
     case 'clock/reset':
-      state.clock.reset()
       return {
         ...state,
+      };
+    case 'timerDisplay/update':
+      return {
+        ...state,
+        currentClockDisplay: action.payload
       };
     default:
       return state;
@@ -276,28 +291,33 @@ const ClockDisplay = (props) => {
   return (
     <div id="time-left">
       {props.active.toString()}
+      {props.currentClockDisplay}
     </div>
   )
 }
 
+// create a clock instance
+const timer = new clock(store.getState().breakTime, store.getState().sessionTime)
 
 const ClockControls = (props) => {
 
-  const handleStartStop = (event) => {
+  const handleStartPause = (event) => {
     event.preventDefault()
-    props.dispatch({ type: 'clockstate/update' })
+    console.log("startstop")
+    timer.startPause()
   }
 
   const handleReset = (event) => {
     event.preventDefault()
-    props.dispatch({ type: 'clock/reset' })
+    console.log("reset")
+    timer.reset()
   }
 
   return (
     <div>
       <button
         id="start_stop"
-        onClick={handleStartStop}
+        onClick={handleStartPause}
       >
         Start
       </button>
@@ -319,13 +339,25 @@ let ReactClock = (props) => {
       <div id="timer-label">
         Session
       </div>
-      <ClockDisplay active={props.active}></ClockDisplay>
-      <ClockControls dispatch={props.dispatch} ></ClockControls>
+      <ClockDisplay
+        active={props.active}
+        currentClockDisplay={props.currentClockDisplay}
+      ></ClockDisplay>
+      <ClockControls
+        dispatch={props.dispatch}
+        sessionTime={props.sessionTime}
+        breakTime={props.breakTime}
+      ></ClockControls>
       <ClockAudio></ClockAudio>
     </div>
   )
 }
-const mapClockStateToProps = (state) => ({ active: state.active })
+const mapClockStateToProps = (state) => ({
+  active: state.active,
+  currentClockDisplay: state.currentClockDisplay,
+  sessionTime: state.sessionTime,
+  breakTime: state.breakTime
+})
 ReactClock = connect(mapClockStateToProps)(ReactClock)
 
 ReactDOM.render(
