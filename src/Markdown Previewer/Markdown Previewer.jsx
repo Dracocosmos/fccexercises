@@ -7,17 +7,10 @@ import { Provider } from "react-redux";
 import $ from "jquery";
 
 // for hot loading css
-import "../../Public/Test2/Test2.css"
+import "../../Public/Markdown Previewer/Markdown Previewer.css"
 // for resetting to the exercise menu
 import Reset from "../Reset";
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-};
-
-document.getElementById("root")
-sleep(20000);
-console.log("hi")
 const storeInitial = {
 };
 
@@ -34,9 +27,30 @@ const exampleReducer = (state = storeInitial, action) => {
 
 const store = createStore(exampleReducer);
 
+class Editor extends React.Component {
+  constructor(props) {
+    super(props);
+
+    store.dispatch({ type: "quote/get" });
+
+    this.state = store.getState();
+
+    //remember to bind this if you make any methods inside object
+    this.updateQuote = this.updateQuote.bind(this);
+  }
+
+  // new-quote button logic
+  updateQuote() {
+  }
+
+  render() {
+  }
+};
+
 ReactDOM.render(
   <Provider store={store}>
     <Reset></Reset>
-    Test2
+    <Editor />
   </Provider>,
-  $("root")[0]);
+  $("#root")[0]
+);
