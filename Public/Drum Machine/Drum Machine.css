@@ -1,15 +1,19 @@
 /* can't use * as selector on codepen */
 
 :root {
-  --background-color: #07f79f;
-  --button-active-color: white;
-  --button-inactive-color: grey;
-  --button-border-color: black;
-  --button-pressed-color: green;
+  --background-color: #daff91;
+  --app-background-color: #014737;
 
+  --button-active-color: #ffebba;
+  --button-inactive-color: #fce879;
 
-  --inner-border: 3px solid black;
-  --border-active-color: grey;
+  --inner-border-color: #eeff00;
+  --border-active-color: #ffffff;
+
+  --font-color: #453f0e;
+  --font-active-color: #ffffff;
+
+  --inner-border: 3px solid var(--inner-border-color);
   --inner-border-active: 3px solid var(--border-active-color);
 }
 
@@ -56,12 +60,22 @@ Button {
 
 
 #drum-machine {
-  min-width: 400px;
-  width: 400px;
+  min-width: 350px;
+  width: 350px;
   max-width: 1000px;
+
+  margin: auto;
+  margin-top: min(2vh, max(20px, 2vh));
+
+  padding: 10px;
 
   display: flex;
   flex-flow: row wrap;
+
+  background-color: var(--app-background-color);
+  border-radius: 10px;
+
+  color: var(--font-color);
 }
 
 /* all the drum pads */
@@ -71,30 +85,43 @@ Button {
 
   display: flex;
   flex-flow: row wrap;
-  background-color: white;
+
+  justify-content: center;
+  align-items: center;
 }
 
 .single-pad-wrapper {
   margin: 1%;
+  height: 100px;
+  width: 100px;
 
-  flex: 0 0 29%;
   background-color: var(--button-inactive-color);
   border: var(--inner-border);
   border-radius: 4px;
+
+  cursor: pointer;
 }
 
 /* when button pressed */
 .single-pad-wrapper:active, .active {
   background-color: var(--button-active-color);
 
-  box-shadow:inset 0px 0px 0px 3px var(--border-active-color);
+  box-shadow: inset 0px 0px 0px 4px var(--border-active-color);
   border: var(--inner-border-active);
+
+  color: var(--font-active-color);
 }
 
 /* button element */
 .drum-pad {
   width: 100%;
   height: 100%;
+
+  font-weight: bold;
+  font-size: 30px;
+  font-family: Verdana, sans-serif;
+
+  cursor: pointer;
 }
 
 /* the pad current sample text low on the pad*/
@@ -105,8 +132,20 @@ Button {
 }
 
 #display {
-  width: 100px; 
+  width: 100%; 
   height: 100px;
-  background-color: blue;
   border: var(--inner-border);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  margin: 5px 10px 5px 10px;
+
+  background-color: var(--button-inactive-color);
+  border-radius: 10px;
+
+  font-size: 25px;
+  font-family: Verdana, sans-serif;
 }
+
