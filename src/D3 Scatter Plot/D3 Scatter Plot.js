@@ -16,8 +16,6 @@ import $ from "jquery";
 
 import * as d3 from "d3"
 
-// const data = [[1, 2], [2, 4], [3, 6], [2, 6]]
-
 const main = (data) => {
   console.log(data)
 
@@ -77,8 +75,9 @@ const main = (data) => {
   const tooltip = d3.select('body')
     .append('rect')
     .attr('class', 'tooltip')
-    .attr('position', 'absolute')
-    .style("opacity", 0)
+    .attr('id', 'tooltip')
+    .style('position', 'absolute')
+    .style('display', 'none')
     .style("width", "200px")
 
   // mouseover for points
@@ -111,13 +110,15 @@ const main = (data) => {
       return showThese.map((string) => entry(string)).join('')
     })
       // make box visible
-      .style("opacity", 1)
+      .style('display', 'inline')
       // change box location
-      .style("left", '100px')
-      .style("top", '100px')
+      .style("left", `${e.layerX + 25}px`)
+      .style("top", `${e.layerY + 25}px`)
+    // console.log(e)
   }
   const mouseLeave = (e, d) => {
-    tooltip.style("opacity", 0)
+    tooltip
+      .style('display', 'none')
   }
 
   // plot points
@@ -133,6 +134,12 @@ const main = (data) => {
     })
     .attr('r', circleSize)
     .attr('class', "dot")
+    .attr('data-xvalue', (d) => d.Year)
+    .attr('data-yvalue', (d) => {
+      const date = new Date("1900-01-01T00:" + d["Time"])
+      console.log(date)
+      return date
+    })
     .on('mouseover', mouseOver)
     .on('mouseleave', mouseLeave)
     .style('fill', 'green');
