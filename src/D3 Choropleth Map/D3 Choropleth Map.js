@@ -7,7 +7,6 @@ import "../../Public/D3 Choropleth Map/D3 Choropleth Map.css"
 import Reset from "../Reset";
 ReactDOM.render(
   <div>
-    D3 Choropleth Map
     <Reset></Reset>
   </div>,
   $("#root")[0]
@@ -21,6 +20,46 @@ import * as d3 from "d3"
 const main = (eduData, mapData) => {
   console.log(eduData)
   console.log(mapData)
+
+  const width = 1000,
+    height = 500;
+
+  // svg container
+  const svg = d3.select("body")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("id", "title")
+  // Draw the map
+  // svg.append("path")
+  //   .datum({ type: "GeometryCollection", features: mapData.objects.nation })
+  //   .attr("d", (d) => {
+  //     console.log(d3.geoPath(d))
+  //     return d3.geoPath(d.features)
+  //   })
+  //   // .attr("d", d3.geoPath())
+  //   .style("stroke", (d) => {
+  //     console.log(d)
+  //     return "blue"
+  //   })
+  svg.append("g")
+    .selectAll("path")
+    .data(mapData.objects.nation)
+    // .data(mapData.objects.nation.geometries)
+    .enter()
+    .append("path")
+    .attr("fill", (d) => {
+      console.log(d)
+      return "#69b3a2"
+    })
+    // .attr("d", (d) => { return d3.path(d.features) })
+    .attr("d", d3.geoPath())
+    .style("stroke", (d) => {
+      console.log(d)
+      return "#fff"
+    })
+  // .attr('width', '100%')
+  // .attr('height', '100%')
 }
 
 // fetches data from localstorage,
