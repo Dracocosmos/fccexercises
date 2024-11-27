@@ -6,29 +6,39 @@ import Reset from "../Reset";
 import $ from "jquery";
 import { createStore } from "redux";
 
+// for hot loading css
+import "../../Public/Random Quote Machine/Random Quote Machine.css"
+
 // TODO: create store for quotes
 
 // initial store state
 // TODO: maybe get them from somewhere?
 const storeInitial = {
   quotes: [
-    "Not Here",
-    "Not There"
-  ]
+    ["me", "Not Here"],
+    ["that person", "But There"],
+    ["gnome", "Have at it"],
+    ["tree", "It's not all here"],
+    ["Cat", "But neither there"]
+  ],
+  currentQuote: ""
 };
 
 //quote randomizer
-const randomQuote = () => {
+const randomQuote = (array = ["no array provided"]) => {
+  const randomNumber = Math.floor(Math.random() * array.length);
 
+  return array[randomNumber]
 };
 
-
-// get quotes 
+// reducer for quotes 
 const quoteReducer = (state = storeInitial, action) => {
   switch (action.type) {
     case 'quote/get':
+      const newQuote = randomQuote(state.quotes);
       return {
         ...state,
+        currentQuote: newQuote
       };
     default:
       return state;
@@ -39,8 +49,40 @@ const store = createStore(quoteReducer);
 
 // box element
 class QuoteBox extends React.Component {
+  constructor(props) {
+    super(props);
+
+    store.dispatch({ type: "quote/get" });
+
+    this.state = store.getState();
+
+    //remember to bind this if you make any methods inside object
+    this.updateQuote = this.updateQuote.bind(this)
+  }
+
+  updateQuote() {
+    store.dispatch({ type: "quote/get" });
+    this.setState({
+      ...store.getState()
+    });
+  }
+
   render() {
-    return <h2>Hi, I am a Car!</h2>;
+    return (
+      <div id="quote-box">
+        <h2 id="text">{this.state.currentQuote[1]}</h2>
+        <div id="author">
+          <span>{this.state.currentQuote[0]}</span>
+        </div>
+        <button
+          type="button"
+          id="new-quote"
+          onClick={this.updateQuote}>
+          Hello
+        </button>
+        <div id="tweet_wrap"><a href="" id="tweet-quote"></a></div>
+      </div>
+    )
   };
 };
 
@@ -51,4 +93,6 @@ reactDom.render(
       <QuoteBox />
     </Provider>
   </Provider>,
-  document.getElementById("root"));
+  // jquery returns a jquery object. 
+  // First thing in it is the native DOM element
+  $("#root")[0])
