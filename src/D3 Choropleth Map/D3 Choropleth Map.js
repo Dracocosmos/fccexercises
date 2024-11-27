@@ -15,14 +15,22 @@ ReactDOM.render(
 import $ from "jquery";
 
 import * as d3 from "d3"
+import * as topojson from "topojson-client";
 
 // main program
 const main = (eduData, mapData) => {
   console.log(eduData)
   console.log(mapData)
 
+  const nationData = topojson.feature(mapData, mapData.objects.nation)
+  const stateData = topojson.feature(mapData, mapData.objects.states)
+  const countyData = topojson.feature(mapData, mapData.objects.counties)
+
+  // let vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
+  // let vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
+
   const width = 1000,
-    height = 500;
+    height = 400;
 
   // svg container
   const svg = d3.select("body")
@@ -30,36 +38,48 @@ const main = (eduData, mapData) => {
     .attr("width", width)
     .attr("height", height)
     .attr("id", "title")
-  // Draw the map
-  // svg.append("path")
-  //   .datum({ type: "GeometryCollection", features: mapData.objects.nation })
-  //   .attr("d", (d) => {
-  //     console.log(d3.geoPath(d))
-  //     return d3.geoPath(d.features)
-  //   })
-  //   // .attr("d", d3.geoPath())
-  //   .style("stroke", (d) => {
-  //     console.log(d)
-  //     return "blue"
-  //   })
-  svg.append("g")
-    .selectAll("path")
-    .data(mapData.objects.nation)
-    // .data(mapData.objects.nation.geometries)
-    .enter()
-    .append("path")
-    .attr("fill", (d) => {
-      console.log(d)
-      return "#69b3a2"
-    })
-    // .attr("d", (d) => { return d3.path(d.features) })
-    .attr("d", d3.geoPath())
+
+  // geoIdentity() projection just to get a projection going
+  // so I can scale etc.
+  const projection = d3.geoIdentity()
+    .fitSize([width, height], nationData)
+
+  // Draw the counties
+  svg.selectAll()
+    .data(countyData.features)
+    .join("path")
+    .attr("d", d3.geoPath()
+      .projection(projection)
+    )
     .style("stroke", (d) => {
-      console.log(d)
-      return "#fff"
+      return "lightcoral"
     })
-  // .attr('width', '100%')
-  // .attr('height', '100%')
+    .style('fill', "white")
+
+  // Draw the states
+  svg.selectAll()
+    .data(stateData.features)
+    .join("path")
+    .attr("d", d3.geoPath()
+      .projection(projection)
+    )
+    .style("stroke", (d) => {
+      return "grey"
+    })
+    .style('fill', "white")
+    .style('fill-opacity', "0")
+
+  // Draw the map
+  svg.append("path")
+    .datum({ type: "FeatureCollection", features: nationData.features })
+    .attr("d", d3.geoPath()
+      .projection(projection)
+    )
+    .style("stroke", (d) => {
+      return "black"
+    })
+    .style('fill', "white")
+    .style('fill-opacity', "0")
 }
 
 // fetches data from localstorage,
