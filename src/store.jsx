@@ -1,32 +1,33 @@
-import { createStore } from "redux";
+import { combineReducers, createStore } from "redux";
 
-const initialState = {
-  exercises: [
+const exerciseInitialState = {
+  list: [
     "Random Quote Machine",
-    "test"
   ],
+  active: null,
 }
 
-const exerciseReducer = (state = initialState, action) => {
+const exerciseReducer = (state, action) => {
+
+  if (state == undefined) {
+    state = exerciseInitialState
+  };
+
   switch (action.type) {
-    case '':
-      return ''
+    case 'exercises/activate':
+      return {
+        ...state,
+        active: action.payload
+      };
     default:
-      return state
-  }
+      return state;
+  };
 };
 
-function counterReducer(state = { value: 0 }, action) {
-  switch (action.type) {
-    case 'counter/incremented':
-      return { value: state.value + 1 }
-    case 'counter/decremented':
-      return { value: state.value - 1 }
-    default:
-      return state
-  }
-};
+const rootReducer = combineReducers({
+  exercises: exerciseReducer,
+});
 
-const store = createStore(exerciseReducer);
+const store = createStore(rootReducer);
 
 export default store
