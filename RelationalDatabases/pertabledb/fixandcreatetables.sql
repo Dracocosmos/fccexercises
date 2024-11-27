@@ -45,7 +45,8 @@ ALTER TABLE properties
   ADD FOREIGN KEY (type_id) REFERENCES types(type_id);
 
 -- add the entries to properties.type_id
--- from new types table
+-- from new types table.
+-- could work with a single update, with a join?
 DO
 $$
 DECLARE
@@ -73,5 +74,14 @@ ALTER TABLE properties
 ALTER TABLE properties
   DROP COLUMN type;
 
+-- uppercase symbols in elements.symbol
+UPDATE elements
+  SET symbol = INITCAP(symbol);
 
 
+-- remove trailing zeroes in properties.atomic_mass
+ALTER TABLE properties 
+  ALTER COLUMN atomic_mass TYPE DECIMAL(999, 4);
+-- TODO:
+UPDATE properties 
+  SET weight = TRIM_SCALE(weight) 
