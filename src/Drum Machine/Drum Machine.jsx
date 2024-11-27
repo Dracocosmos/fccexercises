@@ -4,7 +4,7 @@ import React from "react";
 import { createStore } from "redux";
 import { Provider, connect } from "react-redux";
 
-import $, { post } from "jquery";
+import $, { post, type } from "jquery";
 
 // for hot loading css
 import "../../Public/Drum Machine/Drum Machine.css"
@@ -54,39 +54,30 @@ const storeInitial = {
   samples: [
     {
       key: 'Q', name: '',
-      url: ''
     },
     {
       key: 'W', name: '',
-      url: ''
     },
     {
       key: 'E', name: '',
-      url: ''
     },
     {
       key: 'A', name: '',
-      url: ''
     },
     {
       key: 'S', name: '',
-      url: ''
     },
     {
       key: 'D', name: '',
-      url: ''
     },
     {
       key: 'Z', name: '',
-      url: ''
     },
     {
       key: 'X', name: '',
-      url: ''
     },
     {
       key: 'C', name: '',
-      url: ''
     }
   ],
   lastPlayed: null,
@@ -95,13 +86,22 @@ const storeInitial = {
 storeInitial.samples.forEach((sample, index) => sample.reactKey = index)
 
 // save initial samples
-storeInitial.samples.forEach((sample, index) => {
-  const source = sampleSources[index]
-  // TODO: Array buffer for music file, to save it
-  new File(sample.url, sample.name)
-  sample.url = source.url
-  sample.name = source.name
-});
+const saveSamples = async (sampleList) => {
+  // can't use forEach loop with await, map could work
+  for (let index = 0; index < sampleList.length; index++) {
+    const source = sampleSources[index]
+    const sample = sampleList[index]
+
+    const audio = await fetch(source.url);
+    sample.audio = await audio.blob();
+    sample.url = URL.createObjectURL(sample.audio);
+
+    sample.name = source.name
+  };
+};
+
+await saveSamples(storeInitial.samples);
+console.log(storeInitial.samples[0])
 
 const audioReducer = (state = storeInitial, action) => {
   switch (action.type) {
@@ -138,8 +138,17 @@ class DrumButtons extends React.Component {
     });
   };
 
-  async deleteAudio(audio) {
-    setTimeout(() => audio.remove(), 1000);
+  async deleteAudio() {
+    // TODO: use something that returns a list, not some odd thing here: 
+    const remove = document.getElementsByTagName(".remove");
+
+    console.log(remove)
+    if (remove) {
+      remove.forEach((node, _i) => {
+        node.remove();
+      })
+    };
+    // setTimeout(() => audio.id = "remove", 1000);
   }
 
   async playSound(event, sample) {
@@ -152,11 +161,14 @@ class DrumButtons extends React.Component {
     const audioClone = audio.cloneNode(false)
     const audioParent = audio.parentNode
 
+    audio.muted = true;
     audio.play();
+    audio.classList.add("remove")
 
+    audioClone.play();
     audioParent.appendChild(audioClone);
 
-    this.deleteAudio(audio);
+    this.deleteAudio();
 
     store.dispatch({ type: "lastPlayed/update", payload: sample })
   }
