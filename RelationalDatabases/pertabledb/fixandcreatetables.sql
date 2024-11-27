@@ -86,65 +86,28 @@ UPDATE properties
   SET atomic_mass = TRIM(trailing '0' FROM atomic_mass::TEXT)::DECIMAL;
 
 -- add missing entries
-INSERT INTO (properties 
-      JOIN elements USING(atomic_number)
-      )
-(
-  type_id,
-  atomic_number,
-  atomic_mass,
-  melting_point_celsius,
-  boiling_point_celsius,
-  symbol,
-  name
-) VALUES 
-( 
-  3,
-  9,
-  18.998,
-  -220,
-  -188.1,
-  'F',
-  'Fluorine'
-),
-(
-  3,
-  10,
-  20.18,
-  -248.6,
-  -246.1,
-  'Ne',
-  'Neon'
-);
-
 WITH data(
-  type_id,
-  atomic_number,
-  atomic_mass,
-  melting_point_celsius,
-  boiling_point_celsius,
-  symbol,
-  name
+  type_id, atomic_number, atomic_mass, melting_point_celsius,
+  boiling_point_celsius, symbol, name
 ) AS (
   VALUES
-  (
-( 
-  3,
-  9,
-  18.998,
-  -220,
-  -188.1,
-  'F',
-  'Fluorine'
+    ( 
+      3, 9, 18.998, -220,
+      -188.1, 'F', 'Fluorine'
+    ),
+    (
+      3, 10, 20.18, -248.6,
+      -246.1, 'Ne', 'Neon'
+    )
 ),
-(
-  3,
-  10,
-  20.18,
-  -248.6,
-  -246.1,
-  'Ne',
-  'Neon'
-);
-  )
+ins AS (
+  INSERT INTO properties(atomic_number, atomic_mass,
+  melting_point_celsius, boiling_point_celsius, type_id)
+    SELECT atomic_number, atomic_mass, melting_point_celsius,
+    boiling_point_celsius, type_id
+    FROM data
 )
+INSERT INTO elements (atomic_number, symbol, name)
+  SELECT atomic_number, symbol, name
+  FROM data;
+
