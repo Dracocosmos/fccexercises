@@ -29,36 +29,13 @@ const drawSvg = (data) => {
   // Specify the color scale.
   // const color = d3.scaleOrdinal(data.children.map(d => d.id.split("/").at(-1)), d3.schemeTableau10);
 
-  // Compute the layout.
-  const root = d3.treemap()
-    .tile(d3.treemapSquarify) // e.g., d3.treemapSquarify
-    .size([width, height])
-    .padding(1)
-    .round(true)
-    (d3.hierarchy(data)
-      .sum(d => {
-        return d.value
-      })
-      .sort((a, b) => {
-        return b.value - a.value
-      })
-    );
-
   // svg container
   const svg = d3.select("#root")
     .append("svg")
-    .attr("viewBox", [0, 0, width, height])
+    // .attr("viewBox", [0, 0, width, height])
     .attr("width", width + margin * 2)
     .attr("height", height + margin * 2)
     .attr("id", "svg-container")
-
-  // Add a cell for each leaf of the hierarchy, with a link to the corresponding GitHub page.
-  const leaf = svg.selectAll("g")
-    .data(root.leaves())
-    .join("a")
-    // .attr("transform", d => `translate(${d.x0},${d.y0})`)
-    // .attr("href", d => `https://github.com/prefuse/Flare/blob/master/flare/src${d.data.id}.as`)
-    .attr("target", "_blank");
 
   // background
   svg.append("rect")
@@ -82,6 +59,81 @@ const drawSvg = (data) => {
     .attr("id", "description")
 
   // legend
+
+  // Compute the layout.
+  const root = d3.treemap()
+    .tile(d3.treemapSquarify) // e.g., d3.treemapSquarify
+    .size([width, height])
+    // .size(d => console.log(d))
+    .padding(2)
+    .round(true)
+    (d3.hierarchy(data)
+      .sum(d => {
+        return d.value
+      })
+      .sort((a, b) => {
+        return b.value - a.value
+      })
+    );
+
+  // Add a cell for each leaf of the hierarchy
+  const leaf = svg.selectAll("g")
+    .data(root.leaves())
+    .join("a")
+    .attr("transform", d => {
+      return `translate(${d.x0 + margin},${d.y0 + margin})`
+    })
+
+  // Append a color rectangle. 
+  leaf.append("rect")
+    .attr("id", d => {
+      // (d.leafUid = document.uid("leaf")).id
+      return d.data.category + '-' + d.data.name + '-rect'
+    })
+    .attr("fill", _d => {
+      // while (d.depth > 1) 
+      //   d = d.parent; 
+      // return color(d.data.name); 
+      return 'blue';
+    })
+    .attr("fill-opacity", 0.6)
+    .attr("width", d => d.x1 - d.x0)
+    .attr("height", d => d.y1 - d.y0);
+
+  // Append a clipPath to ensure text does not overflow.
+  leaf.append("clipPath")
+    // .attr("id", d => (d.clipUid = d3.DOM.uid("clip")).id)
+    .attr("id", d => {
+      console.log(d)
+      const uid = d.data.name + '-' + d.data.category
+      d.clipUid = uid
+      return uid
+    })
+    .append("use")
+  // .attr("xlink:href", d => d.leafUid.href);
+
+  leaf.append("text")
+    // TODO: clips not working
+    .attr("clip-path", d => {
+      console.log(d)
+      return '#' + d.clipUid
+    })
+    .selectAll("tspan")
+    // .data(d => {
+    //   return d.data.name
+    // })
+    .data(d => d.data.name.split(/(?=[A-Z][a-z])|\s+/g).concat(d.value))
+    .join("tspan")
+    .attr('font-size', (d, i, nodes) => {
+      return '80%'
+    })
+    .attr("x", 3)
+    .attr("y", (_d, i, _nodes) => {
+      return i + 1 + 'em'
+      // return `${(i === nodes.length - 1) * 0.3 + 1.1 + i * 0.9}em`
+    })
+    .attr("fill-opacity", (_d, i, nodes) => i === nodes.length - 1 ? 0.7 : null)
+    .text(d => d);
 }
 
 const main = (kickstarterData, movieData, gameData) => {
